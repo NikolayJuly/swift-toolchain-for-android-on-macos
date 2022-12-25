@@ -5,6 +5,7 @@ public enum ShellCommandError: Error {
     case nonZeroCode(Int32, String?, String?) // status code, error, output
 }
 
+/// - note: This actor execute commands, to execute script you need to delete`["-c", "-l"]` from `task.arguments`
 public actor ShellCommand {
 
     /// - parameter command: command itself and arguments, , for example ShellCommand(["ls", "-la"], ..)
