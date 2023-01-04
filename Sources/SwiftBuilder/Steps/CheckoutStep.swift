@@ -2,17 +2,30 @@ import Foundation
 import Logging
 import RegexBuilder
 
+enum CheckoutRevision {
+    case commit(String)
+    case tag(String)
+
+    /// default option, it will search hash in output of `utils/update-checkout`
+    case parseFromUpdateCheckoutOuput
+}
+
 protocol Checkoutable {
     var githubUrl: String { get }
 
-    var tag: String { get }
+    var revision: CheckoutRevision { get }
 
-    var folderName: String { get }
+    /// Will be used as folder name for checkout
+    var repoName: String { get }
 }
 
 extension Checkoutable {
-    var folderName: String {
+    var repoName: String {
         githubUrl.components(separatedBy: "/").last!.fileNameByRemovingExtension
+    }
+
+    var revision: CheckoutRevision {
+        .parseFromUpdateCheckoutOuput
     }
 }
 
@@ -24,7 +37,7 @@ actor CheckoutStep: BuildStep {
         self.checkoutables = checkoutables
         statuses = [:]
         for checkoutable in checkoutables {
-            statuses[checkoutable.folderName] = .starting
+            statuses[checkoutable.repoName] = .starting
         }
         self.sortedKeys = statuses.keys.sorted()
     }
@@ -32,6 +45,7 @@ actor CheckoutStep: BuildStep {
     func execute() async throws {
         // TODO: Implement actual checkout and check for existed repo
         // TODO: Implement reporing to terminal
+        fatalError("Implement actual checkout")
     }
 
     // MARK: Private
@@ -41,8 +55,10 @@ actor CheckoutStep: BuildStep {
     private var statuses: [String: Status]
     private let sortedKeys: [String]
 
+    private let defaultRevisionsMap = DefaultRevisionsMap()
+
     fileprivate func update(status: Status, of checkoutable: Checkoutable) {
-        statuses.increase(to: status, for: checkoutable.folderName)
+        statuses.increase(to: status, for: checkoutable.repoName)
     }
 }
 
