@@ -1,9 +1,16 @@
 import Foundation
+import RegexBuilder
 
 // TODO: Consider outomate retriving of `updateChekcoutOutput`
 struct DefaultRevisionsMap {
     init() {
-        fatalError("Implement parsing with regex")
+        let matches = updateChekcoutOutput.matches(of: revisionLineRegex)
+
+        var parsedMap = [String: CheckoutRevision]()
+        for match in matches {
+            parsedMap[match.output.1] = .commit(match.output.2)
+        }
+        self.parsedMap = parsedMap
     }
 
     subscript(_ repoName: String) -> CheckoutRevision? {
@@ -55,3 +62,26 @@ swift-xcode-playground-support     : dd0d8c8d121d2f20664e4779a3d29482a55908bb
 swiftpm                            : 7b898e6cad75a3c096ad947508eb948ad5f614d4
 yams                               : 00c403debcd0a007b854bb35e598466207a2d58c
 """
+
+private let repoNameRegex = Regex {
+    OneOrMore(.word)
+    Repeat(0...) {
+        "-"
+        OneOrMore(.word)
+    }
+}
+private let revisionLineRegex = Regex {
+    ZeroOrMore(.whitespace)
+    Capture {
+        repoNameRegex
+    } transform: { v -> String in
+        String(v)
+    }
+    OneOrMore(.whitespace)
+    ": "
+    Capture {
+        OneOrMore(.hexDigit)
+    } transform: { v -> String in
+        String(v)
+    }
+}
