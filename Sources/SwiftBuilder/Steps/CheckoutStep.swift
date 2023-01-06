@@ -1,6 +1,10 @@
+import ConsoleKit
+import FileLogging
 import Foundation
 import Logging
 import RegexBuilder
+import Shell
+import WorkPoolDraning
 
 enum CheckoutRevision {
     case commit(String)
@@ -33,152 +37,119 @@ extension Checkoutable {
 /// We will checkout few repos at the time, because this steps has fewer chances to fail
 actor CheckoutStep: BuildStep {
 
+    let stepName: String = "Checkout"
+
     init(checkoutables: [Checkoutable]) {
         self.checkoutables = checkoutables
         statuses = [:]
         for checkoutable in checkoutables {
-            statuses[checkoutable.repoName] = .starting
+            statuses[checkoutable.repoName] = .wairing
         }
-        self.sortedKeys = statuses.keys.sorted()
+
+        self.repoNameMaxLength = checkoutables.map { $0.repoName.count }.max() ?? 5
     }
 
-    func execute() async throws {
-        // TODO: Implement actual checkout and check for existed repo
-        // TODO: Implement reporing to terminal
-        fatalError("Implement actual checkout")
+    func execute(_ config: BuildConfig, logger: Logger) async throws {
+        typealias Drainer = StaticAsyncWorkPoolDrainer<Checkoutable, Void>
+
+        try fileManager.createFolderIfNotExists(at: config.logsFolder)
+
+        logger.info("Start working on checkout. We have \(checkoutables.count) repos to work on")
+
+        terminal.pushEphemeral()
+        printCurrentCheckoutStatus()
+
+        let workPoolDrainer = Drainer(stack: checkoutables,
+                                      maxConcurrentOperationCount: 5) { checkoutable in
+            self.statuses[checkoutable.repoName] = .fetching
+            do {
+                try await self.clone(checkoutable, config: config, logger: logger)
+                self.statuses[checkoutable.repoName] = .success
+            } catch let exc {
+                self.statuses[checkoutable.repoName] = .failied
+                throw exc
+            }
+        }
+
+        try await workPoolDrainer.wait()
     }
 
     // MARK: Private
 
     private let checkoutables: [Checkoutable]
 
-    private var statuses: [String: Status]
-    private let sortedKeys: [String]
+    private var statuses: [String: Status] {
+        didSet {
+            printCurrentCheckoutStatus()
+        }
+    }
+
+    private let repoNameMaxLength: Int
 
     private let defaultRevisionsMap = DefaultRevisionsMap()
+    private let fileManager: FileManager = .default
+    private let terminal = Terminal()
 
     fileprivate func update(status: Status, of checkoutable: Checkoutable) {
         statuses.increase(to: status, for: checkoutable.repoName)
     }
+
+    private func clone(_ checkoutable: Checkoutable, config: BuildConfig, logger: Logger) async throws {
+        let sourceUrl = URL(string: checkoutable.githubUrl)!
+        let destination = config.workingFolder.appendingPathComponent(checkoutable.repoName, isDirectory: true)
+
+        let logFileName = "git-clone-\(checkoutable.repoName).log"
+        let logFileURL = config.logsFolder.appendingPathComponent(logFileName, isDirectory: false)
+
+        logger.info("Start clonning \(checkoutable.repoName). Log at \(logFileURL.path)")
+
+        let fileLogger = try FileLogging(to: logFileURL)
+
+        let cloneLogger = Logger(label: checkoutable.repoName) { label in
+            fileLogger.handler(label: label)
+        }
+
+        let gitClone = GitClone(source: sourceUrl, destination: destination, logger: cloneLogger)
+        do {
+            try await gitClone.execute()
+        } catch let exc {
+            logger.error("Failed git clone of \(checkoutable.repoName). Error - \(exc)")
+            throw exc
+        }
+    }
+
+    private func printCurrentCheckoutStatus() {
+        terminal.popEphemeral()
+        terminal.pushEphemeral()
+
+        terminal.output("Checkout:")
+
+        for checkoutable in checkoutables {
+            // Values of maps created on init with some value, and I never nil them
+            // To simplify logic, I will use `!`
+            let status = statuses[checkoutable.repoName]!
+            let statusText: ConsoleText
+            switch status {
+            case .wairing:
+                statusText = "waiting".consoleText(ConsoleStyle(color: .yellow))
+            case .fetching:
+                statusText = "fetching".consoleText(ConsoleStyle(color: .blue))
+            case .success:
+                statusText = "success".consoleText(.success)
+            case .failied:
+                statusText = "failed".consoleText(.error)
+            }
+
+            let repoName = checkoutable.repoName.padding(toLength: repoNameMaxLength, withPad: " ", startingAt: 0)
+            let title = (repoName + " - ").consoleText(.plain)
+            terminal.output(title + statusText)
+        }
+    }
 }
 
 private enum Status: Comparable {
-    case starting
-    case receivingObjects(Double)
-    case resolvingDeltas(Double)
-
-    static func < (lhs: Self, rhs: Self) -> Bool {
-        switch (lhs, rhs) {
-        case (.starting, _):
-            return true
-        case (.receivingObjects, .starting):
-            return false
-        case let (.receivingObjects(l), .receivingObjects(r)):
-            return l < r
-        case (.receivingObjects, .resolvingDeltas):
-            return true
-        case let (.resolvingDeltas(l), .resolvingDeltas(r)):
-            return l < r
-        case (.resolvingDeltas,_):
-            return false
-        }
-    }
-
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        switch (lhs, rhs) {
-        case (.starting, .starting):
-            return true
-        case let (.receivingObjects(l), .receivingObjects(r)):
-            return abs(l - r) < 0.01
-        case let (.resolvingDeltas(l), .resolvingDeltas(r)):
-            return abs(l - r) < 0.01
-        default:
-            return false
-        }
-    }
-}
-
-private struct GitCheckoutStatusReceiver: LogHandler {
-
-    weak var checkoutStep: CheckoutStep?
-    let checkoutable: Checkoutable
-
-    init(checkoutable: Checkoutable, checkoutStep: CheckoutStep) {
-        self.checkoutable = checkoutable
-        self.checkoutStep = checkoutStep
-    }
-
-    subscript(metadataKey key: String) -> Logger.Metadata.Value? {
-        get { self.metadata[key] }
-        set { self.metadata[key] = newValue }
-    }
-
-    var metadata: Logger.Metadata = [:]
-
-    var logLevel: Logger.Level = .info
-
-    func log(level: Logger.Level,
-             message: Logger.Message,
-             metadata: Logger.Metadata?,
-             source: String,
-             file: String,
-             function: String,
-             line: UInt) {
-        // We will try to parse few expected scenarios:
-        // Receiving objects:   3% (3656/121866)
-        // Receiving objects:   5% (6094/121866), 4.28 MiB | 8.41 MiB/s
-        // Receiving objects: 100% (121866/121866), 52.47 MiB | 6.15 MiB/s, done.
-        // Resolving deltas:   1% (635/63474)
-        // Resolving deltas: 100% (63474/63474), done.
-        let string = "\(message)"
-        let receivingMatch = string.firstMatch(of: receivingObjectsRegex)
-        let resolvingMatch = string.firstMatch(of: resolvingObjectsRegex)
-
-        let receivingStatus: Status? = receivingMatch.map { .receivingObjects($0.output.1) }
-        let resolvingStatus: Status? = resolvingMatch.map { .resolvingDeltas($0.output.1) }
-
-        let newStatus = resolvingStatus ?? receivingStatus
-
-        guard let newStatus else {
-            return
-        }
-
-        Task {
-            await checkoutStep?.update(status: newStatus, of: checkoutable)
-        }
-    }
-}
-
-private let receivingObjectsRegex = Regex {
-    "Receiving objects:"
-    OneOrMore(.whitespace)
-    Capture {
-        OneOrMore(.digit)
-    } transform: { str -> Double in
-        guard let digits = Double(str) else {
-            throw "Failed to convert \(str) to Double"
-        }
-        return digits/100.0 as Double
-    }
-    "%"
-    OneOrMore {
-        .any
-    }
-}
-
-private let resolvingObjectsRegex = Regex {
-    "Resolving deltas:"
-    OneOrMore(.whitespace)
-    Capture {
-        OneOrMore(.digit)
-    } transform: { str -> Double in
-        guard let digits = Double(str) else {
-            throw "Failed to convert \(str) to Double"
-        }
-        return digits/100.0 as Double
-    }
-    "%"
-    OneOrMore {
-        .any
-    }
+    case wairing
+    case fetching
+    case success
+    case failied
 }

@@ -51,7 +51,7 @@ public actor ShellCommand {
         }
 
         let commandString = wrappedCommand.joined(separator: " ")
-        logger.debug("Executing \(commandString)")
+        logger.info("Executing command: \(commandString)")
 
         task.standardOutput = pipe
         task.standardError = errorPipe
@@ -110,7 +110,7 @@ public actor ShellCommand {
         pipe.fileHandleForReading.readabilityHandler = nil
         errorPipe.fileHandleForReading.readabilityHandler = nil
 
-        let restOfStdOut =  try errorPipe.fileHandleForReading.readToEnd() ?? Data()
+        let restOfStdOut = try errorPipe.fileHandleForReading.readToEnd() ?? Data()
         stdOutLines.add(restOfStdOut)
         stdOutLines.complete()
 
