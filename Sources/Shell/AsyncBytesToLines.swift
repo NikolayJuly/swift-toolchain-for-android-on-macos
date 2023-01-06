@@ -30,7 +30,6 @@ final class AsyncBytesToLines: AsyncSequence {
                     return
                 }
 
-
                 let oldCounter = count
                 count += 1
 
@@ -73,7 +72,6 @@ final class AsyncBytesToLines: AsyncSequence {
                 }
                 didAddAtLeastOneLine = true
             }
-
 
             if didAddAtLeastOneLine {
                 waiters = self.updateWaiters

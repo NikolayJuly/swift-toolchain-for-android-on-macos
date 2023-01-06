@@ -8,7 +8,7 @@ public enum ShellCommandError: Error {
 /// - note: This actor execute commands, to execute script you need to delete`["-c", "-l"]` from `task.arguments`
 public actor ShellCommand {
 
-    /// - parameter command: command itself and arguments, , for example ShellCommand(["ls", "-la"], ..)
+    /// - parameter command: command itself and arguments, for example ShellCommand(["ls", "-la"], ..)
     public init(_ command: [String],
                 currentDirectoryURL: URL? = nil,
                 environment: [String: String]? = nil,
