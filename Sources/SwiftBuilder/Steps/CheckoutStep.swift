@@ -61,9 +61,18 @@ actor CheckoutStep: BuildStep {
 
         let workPoolDrainer = Drainer(stack: checkoutables,
                                       maxConcurrentOperationCount: 5) { checkoutable in
+
             self.statuses[checkoutable.repoName] = .fetching
             do {
-                try await self.clone(checkoutable, config: config, logger: logger)
+                let repoFolder = config.location(for: checkoutable)
+                let isExistedRepo = await repoFolder.isGitRepo()
+
+                if isExistedRepo {
+                    fatalError("Implement hard reset to needed revision")
+                } else {
+                    try await self.clone(checkoutable, config: config, logger: logger)
+                }
+
                 self.statuses[checkoutable.repoName] = .success
             } catch let exc {
                 self.statuses[checkoutable.repoName] = .failied
@@ -96,7 +105,7 @@ actor CheckoutStep: BuildStep {
 
     private func clone(_ checkoutable: Checkoutable, config: BuildConfig, logger: Logger) async throws {
         let sourceUrl = URL(string: checkoutable.githubUrl)!
-        let destination = config.workingFolder.appendingPathComponent(checkoutable.repoName, isDirectory: true)
+        let destination = config.location(for: checkoutable)
 
         let logFileName = "git-clone-\(checkoutable.repoName).log"
         let logFileURL = config.logsFolder.appendingPathComponent(logFileName, isDirectory: false)
@@ -152,4 +161,10 @@ private enum Status: Comparable {
     case fetching
     case success
     case failied
+}
+
+private extension BuildConfig {
+    func location(for checkoutable: Checkoutable) -> URL {
+        return workingFolder.appendingPathComponent(checkoutable.repoName, isDirectory: true)
+    }
 }
