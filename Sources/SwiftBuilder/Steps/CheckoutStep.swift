@@ -6,7 +6,7 @@ import RegexBuilder
 import Shell
 import WorkPoolDraning
 
-enum CheckoutRevision {
+enum CheckoutRevision: Equatable {
     case commit(String)
     case tag(String)
 
@@ -67,11 +67,34 @@ actor CheckoutStep: BuildStep {
                 let repoFolder = config.location(for: checkoutable)
                 let isExistedRepo = await repoFolder.isGitRepo()
 
-                if isExistedRepo {
-                    fatalError("Implement hard reset to needed revision")
-                } else {
+                if !isExistedRepo {
                     try await self.clone(checkoutable, config: config, logger: logger)
                 }
+
+                var revision = checkoutable.revision
+                if revision == .parseFromUpdateCheckoutOuput {
+                    guard let defaultRevision = self.defaultRevisionsMap[checkoutable.repoName] else {
+                        throw "No default revision for \(checkoutable.repoName)"
+                    }
+                    revision = defaultRevision
+                }
+
+
+                let object: String
+                switch revision {
+                case let .commit(hash):
+                    object = hash
+                case let .tag(tag):
+                    object = tag
+                case .parseFromUpdateCheckoutOuput:
+                    throw "Unepected value of revision for \(checkoutable.repoName)"
+                }
+
+                logger.info("Checking out \(object) in \(checkoutable.repoName)")
+
+                let gitReset = GitReset(repoUrl: repoFolder, object: object, logger: logger)
+
+                try await gitReset.execute()
 
                 self.statuses[checkoutable.repoName] = .success
             } catch let exc {

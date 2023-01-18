@@ -31,7 +31,7 @@ struct CMarkRepo: Checkoutable {
 }
 
 struct YamsRepo: Checkoutable {
-    let githubUrl = "https://github.com/jpsim/Yams.git"
+    let githubUrl = "https://github.com/jpsim/yams.git"
 }
 
 struct SwiftArgumentParserRepo: Checkoutable {
