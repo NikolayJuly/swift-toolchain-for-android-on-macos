@@ -6,7 +6,7 @@ import RegexBuilder
 import Shell
 import WorkPoolDraning
 
-enum CheckoutRevision {
+enum CheckoutRevision: Equatable {
     case commit(String)
     case tag(String)
 
@@ -61,9 +61,41 @@ actor CheckoutStep: BuildStep {
 
         let workPoolDrainer = Drainer(stack: checkoutables,
                                       maxConcurrentOperationCount: 5) { checkoutable in
+
             self.statuses[checkoutable.repoName] = .fetching
             do {
-                try await self.clone(checkoutable, config: config, logger: logger)
+                let repoFolder = config.location(for: checkoutable)
+                let isExistedRepo = await repoFolder.isGitRepo()
+
+                if !isExistedRepo {
+                    try await self.clone(checkoutable, config: config, logger: logger)
+                }
+
+                var revision = checkoutable.revision
+                if revision == .parseFromUpdateCheckoutOuput {
+                    guard let defaultRevision = self.defaultRevisionsMap[checkoutable.repoName] else {
+                        throw "No default revision for \(checkoutable.repoName)"
+                    }
+                    revision = defaultRevision
+                }
+
+
+                let object: String
+                switch revision {
+                case let .commit(hash):
+                    object = hash
+                case let .tag(tag):
+                    object = tag
+                case .parseFromUpdateCheckoutOuput:
+                    throw "Unepected value of revision for \(checkoutable.repoName)"
+                }
+
+                logger.info("Checking out \(object) in \(checkoutable.repoName)")
+
+                let gitReset = GitReset(repoUrl: repoFolder, object: object, logger: logger)
+
+                try await gitReset.execute()
+
                 self.statuses[checkoutable.repoName] = .success
             } catch let exc {
                 self.statuses[checkoutable.repoName] = .failied
@@ -96,7 +128,7 @@ actor CheckoutStep: BuildStep {
 
     private func clone(_ checkoutable: Checkoutable, config: BuildConfig, logger: Logger) async throws {
         let sourceUrl = URL(string: checkoutable.githubUrl)!
-        let destination = config.workingFolder.appendingPathComponent(checkoutable.repoName, isDirectory: true)
+        let destination = config.location(for: checkoutable)
 
         let logFileName = "git-clone-\(checkoutable.repoName).log"
         let logFileURL = config.logsFolder.appendingPathComponent(logFileName, isDirectory: false)
@@ -152,4 +184,10 @@ private enum Status: Comparable {
     case fetching
     case success
     case failied
+}
+
+private extension BuildConfig {
+    func location(for checkoutable: Checkoutable) -> URL {
+        return workingFolder.appendingPathComponent(checkoutable.repoName, isDirectory: true)
+    }
 }
