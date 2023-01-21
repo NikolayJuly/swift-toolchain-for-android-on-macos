@@ -3,6 +3,7 @@
 Swift toolchain for android on macos
 
 ## Prerequisites
+- You are on arm64 mac
 - Install NDK and CMake. (Instructions)[https://developer.android.com/studio/projects/install-ndk]
 
 ## Execute

@@ -38,20 +38,7 @@ public final class ShellCommand {
         let pipe = Pipe()
         let errorPipe = Pipe()
 
-        // If we have command part with space inside, but it is not wrapped with "", we will enforce it
-        let wrappedCommand = command.map { commandPart in
-            guard commandPart.contains(" ") else {
-                return commandPart
-            }
-
-            guard commandPart.hasPrefix("\"") == false else {
-                return commandPart
-            }
-
-            return "\"" + commandPart + "\""
-        }
-
-        let commandString = wrappedCommand.joined(separator: " ")
+        let commandString = command.joined(separator: " ")
         logger.info("Executing command: \(commandString)")
 
         task.standardOutput = pipe

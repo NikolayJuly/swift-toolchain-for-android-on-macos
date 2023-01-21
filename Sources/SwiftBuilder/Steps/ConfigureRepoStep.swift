@@ -7,10 +7,16 @@ protocol ConfigurableRepo: Checkoutable {
     var cmakeCacheEntries: [String] { get }
 
     var buildSubfolder: String? { get }
+
+    var dependencies: [String: BuildableRepo] { get }
 }
 
 extension ConfigurableRepo {
+    var cmakeCacheEntries: [String] { [] }
+
     var buildSubfolder: String? { nil }
+
+    var dependencies: [String: BuildableRepo] { [:] }
 }
 
 extension BuildConfig {
@@ -45,10 +51,17 @@ final class ConfigureRepoStep: BuildStep {
         let repoBuildFolder = config.buildLocation(for: configurableRepo)
         try fileManager.createEmptyFolder(at: repoBuildFolder)
 
+        let depCacheEntries: [String] = configurableRepo.dependencies.map { keyValue in
+            let depName = keyValue.key
+            let dep = keyValue.value
+            let depBuildUrl = config.buildLocation(for: dep)
+            return depName + "_DIR=\"\(depBuildUrl.path)/cmake/modules\""
+        }
+
         let config = CMakeConfigure(folderUrl: repoFolder,
                                     cmakePath: config.cmakePath,
                                     buildFolder: repoBuildFolder,
-                                    cacheEntries: configurableRepo.cmakeCacheEntries,
+                                    cacheEntries: configurableRepo.cmakeCacheEntries + depCacheEntries,
                                     logger: logger)
         try await config.execute()
 
