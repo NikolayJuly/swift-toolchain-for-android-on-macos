@@ -10,6 +10,8 @@ struct BuildConfig {
 
     let cmakePath: String
 
+    let ndkPath: String
+
     var logsFolder: URL { workingFolder.appendingPathComponent("logs", isDirectory: true) }
 
     var buildsRootFolder: URL { workingFolder.appendingPathComponent("build", isDirectory: true) }
@@ -34,6 +36,10 @@ final class SwiftBuildCommand: AsyncParsableCommand {
                            help: "Path to folder, which contains smake binary")
     var cmakePath: String
 
+    @ArgumentParser.Option(name: .long,
+                           help: "Path installed NDK, we expect v25 (25.1.8937393 exactly)")
+    var ndkPath: String
+
     func validate() throws {
         // I know that this function throw error, if failed to create needed folder
         try fileManager.createFolderIfNotExists(at: workingFolder)
@@ -48,7 +54,7 @@ final class SwiftBuildCommand: AsyncParsableCommand {
 
         terminal.output("\n\nStart building process\n")
 
-        let buildConfig = BuildConfig(workingFolder: workingFolder, cmakePath: cmakePath)
+        let buildConfig = BuildConfig(workingFolder: workingFolder, cmakePath: cmakePath, ndkPath: ndkPath)
 
         try fileManager.createFolderIfNotExists(at: buildConfig.logsFolder)
 
