@@ -1,4 +1,5 @@
 import ArgumentParser
+import ConsoleKit
 import FileLogging
 import Foundation
 import Logging
@@ -8,6 +9,8 @@ struct BuildConfig {
     let workingFolder: URL
 
     let cmakePath: String
+
+    let ndkPath: String
 
     var logsFolder: URL { workingFolder.appendingPathComponent("logs", isDirectory: true) }
 
@@ -24,14 +27,18 @@ protocol BuildStep {
 @main
 final class SwiftBuildCommand: AsyncParsableCommand {
 
-    @Option(name: .long,
-            help: "Folder which will contain all checkouts, logs and final artefacts",
-            transform: { URL(fileURLWithPath: $0, isDirectory: true) })
+    @ArgumentParser.Option(name: .long,
+                           help: "Folder which will contain all checkouts, logs and final artefacts",
+                           transform: { URL(fileURLWithPath: $0, isDirectory: true) })
     var workingFolder: URL
 
-    @Option(name: .long,
-            help: "Path to folder, which contains smake binary")
+    @ArgumentParser.Option(name: .long,
+                           help: "Path to folder, which contains smake binary")
     var cmakePath: String
+
+    @ArgumentParser.Option(name: .long,
+                           help: "Path installed NDK, we expect v25 (25.1.8937393 exactly)")
+    var ndkPath: String
 
     func validate() throws {
         // I know that this function throw error, if failed to create needed folder
@@ -42,12 +49,26 @@ final class SwiftBuildCommand: AsyncParsableCommand {
 
         try validation()
 
-        let buildConfig = BuildConfig(workingFolder: workingFolder, cmakePath: cmakePath)
+        var buildProgress = try BuildProgress(withProgressIn: workingFolder)
+        let terminal = Terminal()
+
+        terminal.output("\n\nStart building process\n")
+
+        let buildConfig = BuildConfig(workingFolder: workingFolder, cmakePath: cmakePath, ndkPath: ndkPath)
 
         try fileManager.createFolderIfNotExists(at: buildConfig.logsFolder)
 
         for i in 0..<steps.count {
             let step = steps[i]
+
+            // Check - may be we already completed this step
+            let alreadyCompleted = buildProgress.completedSteps.contains(step.stepName)
+
+            guard !alreadyCompleted else {
+                terminal.output("Skipping step \(step.stepName)")
+                continue
+            }
+
             let stepNumberString = String(format: "%02d", i+1)
             let logFileName = "Step-\(stepNumberString)-\(step.stepName).log"
             let logFileURL = buildConfig.logsFolder.appendingPathComponent(logFileName, isDirectory: false)
@@ -58,6 +79,9 @@ final class SwiftBuildCommand: AsyncParsableCommand {
             }
 
             try await step.execute(buildConfig, logger: stepLogger)
+
+            buildProgress = buildProgress.updated(byAdding: step.stepName)
+            try buildProgress.save(to: workingFolder)
         }
     }
 
@@ -68,7 +92,7 @@ final class SwiftBuildCommand: AsyncParsableCommand {
     private var steps: [BuildStep] { Self.steps }
 
     private static let steps: [BuildStep] = {
-        let checkoutStep: BuildStep = CheckoutStep(checkoutables: Repos.allRepos)
+        let checkoutStep: BuildStep = CheckoutStep(checkoutables: Repos.checkoutOrder)
 
         let buildSteps: [BuildStep] = Repos.buildOrder.flatMap { repo -> [BuildStep] in
             let configure = ConfigureRepoStep(configurableRepo: repo)
@@ -89,8 +113,4 @@ final class SwiftBuildCommand: AsyncParsableCommand {
             throw "There is no `ninja` binary at \(cmakePath)"
         }
     }
-}
-
-private extension String {
-    static let cmakePathEnvKey = "CMAKE_PATH"
 }

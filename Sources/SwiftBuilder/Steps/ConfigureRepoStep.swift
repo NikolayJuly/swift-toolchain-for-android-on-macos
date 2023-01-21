@@ -3,14 +3,32 @@ import Foundation
 import Logging
 import Shell
 
+protocol ConfigurableRepoDependency {
+    func cmakeDepDirCaheEntry(depName: String, config: BuildConfig) -> [String]
+}
+
+extension ConfigurableRepoDependency where Self: BuildableRepo {
+    func cmakeDepDirCaheEntry(depName: String, config: BuildConfig) -> [String] {
+        let depBuildUrl = config.buildLocation(for: self)
+        let res = depName + "_DIR=\"\(depBuildUrl.path)/cmake/modules\""
+        return [res]
+    }
+}
+
 protocol ConfigurableRepo: Checkoutable {
     var cmakeCacheEntries: [String] { get }
 
     var buildSubfolder: String? { get }
+
+    var dependencies: [String: ConfigurableRepoDependency] { get }
 }
 
 extension ConfigurableRepo {
+    var cmakeCacheEntries: [String] { [] }
+
     var buildSubfolder: String? { nil }
+
+    var dependencies: [String: ConfigurableRepoDependency] { [:] }
 }
 
 extension BuildConfig {
@@ -45,10 +63,16 @@ final class ConfigureRepoStep: BuildStep {
         let repoBuildFolder = config.buildLocation(for: configurableRepo)
         try fileManager.createEmptyFolder(at: repoBuildFolder)
 
+        let depCacheEntries: [String] = configurableRepo.dependencies.flatMap { keyValue in
+            let depName = keyValue.key
+            let dep = keyValue.value
+            return dep.cmakeDepDirCaheEntry(depName: depName, config: config)
+        }
+
         let config = CMakeConfigure(folderUrl: repoFolder,
                                     cmakePath: config.cmakePath,
                                     buildFolder: repoBuildFolder,
-                                    cacheEntries: configurableRepo.cmakeCacheEntries,
+                                    cacheEntries: configurableRepo.cmakeCacheEntries + depCacheEntries,
                                     logger: logger)
         try await config.execute()
 
