@@ -68,7 +68,7 @@ final class SwiftBuildCommand: AsyncParsableCommand {
     private var steps: [BuildStep] { Self.steps }
 
     private static let steps: [BuildStep] = {
-        let checkoutStep: BuildStep = CheckoutStep(checkoutables: Repos.allRepos)
+        let checkoutStep: BuildStep = CheckoutStep(checkoutables: Repos.checkoutOrder)
 
         let buildSteps: [BuildStep] = Repos.buildOrder.flatMap { repo -> [BuildStep] in
             let configure = ConfigureRepoStep(configurableRepo: repo)

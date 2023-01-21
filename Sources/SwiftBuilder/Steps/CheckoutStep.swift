@@ -114,7 +114,7 @@ actor CheckoutStep: BuildStep {
 
         try await workPoolDrainer.wait()
 
-        terminal.output("Checkout complete in \(timeMesurement.durationString)")
+        terminal.output("Checkout completed in \(timeMesurement.durationString)")
     }
 
     // MARK: Private

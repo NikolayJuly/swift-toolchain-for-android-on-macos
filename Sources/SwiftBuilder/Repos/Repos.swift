@@ -1,23 +1,35 @@
 import Foundation
 
 enum Repos {
-    static let allRepos: [Checkoutable] = [
-        SwiftRepo(),
-        LlvmProjectRepo(),
-        CMarkRepo(),
-        YamsRepo(),
-        SwiftArgumentParserRepo(),
-        SwiftSystemRepo(),
-        SwiftLLBuildCoreRepo(),
-        SwiftDriverRepo(),
-        SwiftCryptoRepo(),
-        SwiftCollectionsRepo(),
-        SPMRepo()
+    static let checkoutOrder: [Checkoutable] = [
+        swift,
+        llvm,
+        cmark,
+        yams,
+        swiftArgumentParser,
+        swiftSystem,
+        llbuild,
+        swiftDriver,
+        crypto,
+        collections,
+        spm,
     ]
 
     static let buildOrder: [ConfigurableRepo & BuildableRepo] = [
         LlvmProjectRepo(),
     ]
+
+    static let swift = SwiftRepo()
+    static let llvm = LlvmProjectRepo()
+    static let cmark = CMarkRepo()
+    static let yams = YamsRepo()
+    static let swiftArgumentParser = SwiftArgumentParserRepo()
+    static let swiftSystem = SwiftSystemRepo()
+    static let llbuild = SwiftLLBuildCoreRepo()
+    static let swiftDriver = SwiftDriverRepo()
+    static let crypto = SwiftCryptoRepo()
+    static let collections = SwiftCollectionsRepo()
+    static let spm = SPMRepo()
 }
 
 struct SwiftRepo: ConfigurableRepo {
