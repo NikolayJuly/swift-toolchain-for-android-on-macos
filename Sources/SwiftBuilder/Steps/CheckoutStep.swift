@@ -33,6 +33,12 @@ extension Checkoutable {
     }
 }
 
+extension BuildConfig {
+    func location(for checkoutable: Checkoutable) -> URL {
+        return workingFolder.appendingPathComponent(checkoutable.repoName, isDirectory: true)
+    }
+}
+
 /// This step will checkout all needed repos for the build
 /// We will checkout few repos at the time, because this steps has fewer chances to fail
 actor CheckoutStep: BuildStep {
@@ -51,6 +57,8 @@ actor CheckoutStep: BuildStep {
 
     func execute(_ config: BuildConfig, logger: Logger) async throws {
         typealias Drainer = StaticAsyncWorkPoolDrainer<Checkoutable, Void>
+
+        let timeMesurement = TimeMesurement()
 
         try fileManager.createFolderIfNotExists(at: config.logsFolder)
 
@@ -79,7 +87,6 @@ actor CheckoutStep: BuildStep {
                     revision = defaultRevision
                 }
 
-
                 let object: String
                 switch revision {
                 case let .commit(hash):
@@ -96,6 +103,8 @@ actor CheckoutStep: BuildStep {
 
                 try await gitReset.execute()
 
+                logger.info("Did checkout \(object) in \(checkoutable.repoName)")
+
                 self.statuses[checkoutable.repoName] = .success
             } catch let exc {
                 self.statuses[checkoutable.repoName] = .failied
@@ -104,6 +113,8 @@ actor CheckoutStep: BuildStep {
         }
 
         try await workPoolDrainer.wait()
+
+        terminal.output("Checkout complete in \(timeMesurement.durationString)")
     }
 
     // MARK: Private
@@ -184,10 +195,4 @@ private enum Status: Comparable {
     case fetching
     case success
     case failied
-}
-
-private extension BuildConfig {
-    func location(for checkoutable: Checkoutable) -> URL {
-        return workingFolder.appendingPathComponent(checkoutable.repoName, isDirectory: true)
-    }
 }

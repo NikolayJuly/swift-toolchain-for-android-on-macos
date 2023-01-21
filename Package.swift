@@ -35,6 +35,9 @@ let package = Package(
                 .product(name: "FileLogging", package: "swift-log-file"),
                 .product(name: "WorkPoolDraning", package: "drain-work-pool"),
                 "Shell",
+            ],
+            exclude: [
+                "Repos/HowToGetCommitHashes.md",
             ]),
         .target(
             name: "Shell",

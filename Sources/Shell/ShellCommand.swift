@@ -5,8 +5,8 @@ public enum ShellCommandError: Error {
     case nonZeroCode(Int32, String?, String?) // status code, error, output
 }
 
-/// - note: This actor execute commands, to execute script you need to delete`["-c", "-l"]` from `task.arguments`
-public actor ShellCommand {
+/// - note: This class execute commands, to execute script you need only`["-l"]` in `task.arguments`, so remove "-c"
+public final class ShellCommand {
 
     /// - parameter command: command itself and arguments, for example ShellCommand(["ls", "-la"], ..)
     public init(_ command: [String],
@@ -34,6 +34,7 @@ public actor ShellCommand {
     @discardableResult
     public func execute() async throws -> String {
         let task = Process()
+
         let pipe = Pipe()
         let errorPipe = Pipe()
 
@@ -71,15 +72,26 @@ public actor ShellCommand {
         let errOutLines = AsyncBytesToLines()
 
         pipe.fileHandleForReading.readabilityHandler = { fileHandler in
+            self.lock.lock()
+            defer { self.lock.unlock() }
+            guard !self.didCompleteTask else {
+                // We might have race condition, where we will `readToTheEnd()` and complete async bytes, when this block called with non empty data somehow
+                return
+            }
             let availableData = fileHandler.availableData
             guard availableData.isEmpty == false else {
                 return
             }
-
             stdOutLines.add(availableData)
         }
 
         errorPipe.fileHandleForReading.readabilityHandler = { fileHandler in
+            self.lock.lock()
+            defer { self.lock.unlock() }
+            guard !self.didCompleteTask else {
+                // We might have race condition, where we will `readToTheEnd()` and complete async bytes, when this block called with non empty data somehow
+                return
+            }
             let availableData = fileHandler.availableData
             guard availableData.isEmpty == false else {
                 return
@@ -90,7 +102,7 @@ public actor ShellCommand {
         let stdOutputTask = Task {
             for await line in stdOutLines {
                 stdOut.append(line)
-                logger.info("\(line)")
+                logger.info("In Task: \(line)")
             }
         }
 
@@ -101,22 +113,34 @@ public actor ShellCommand {
             }
         }
 
-        try task.run()
-
         await withCheckedContinuation { [task] continuation in
-            task.asyncWait(continuation: continuation)
+            task.terminationHandler = { _ in
+                continuation.resume()
+            }
+
+            do {
+                try task.run()
+            } catch let exc {
+                logger.error("Failed to run task with error - \(exc)")
+            }
         }
 
-        pipe.fileHandleForReading.readabilityHandler = nil
-        errorPipe.fileHandleForReading.readabilityHandler = nil
+        lock.withLock {
+            self.didCompleteTask = true
+            pipe.fileHandleForReading.readabilityHandler = nil
+            errorPipe.fileHandleForReading.readabilityHandler = nil
 
-        let restOfStdOut = try errorPipe.fileHandleForReading.readToEnd() ?? Data()
-        stdOutLines.add(restOfStdOut)
-        stdOutLines.complete()
+            if let restOfStdOut = try? errorPipe.fileHandleForReading.readToEnd() {
+                stdOutLines.add(restOfStdOut)
+            }
+            stdOutLines.complete()
 
-        let restOfErrOut = try errorPipe.fileHandleForReading.readToEnd() ?? Data()
-        errOutLines.add(restOfErrOut)
-        errOutLines.complete()
+            if let restOfErrOut = try? errorPipe.fileHandleForReading.readToEnd() {
+                errOutLines.add(restOfErrOut)
+            }
+
+            errOutLines.complete()
+        }
 
         _ = await (stdOutputTask.result, errorOutputTask.result)
 
@@ -132,21 +156,16 @@ public actor ShellCommand {
 
     // MARK: Private
 
+
     private let command: [String]
     private let currentDirectoryURL: URL?
     private let environment: [String: String]?
     private let logger: Logger
 
+    private let lock = NSLock()
+    private var didCompleteTask = false
+
     private var stdOut = [String]()
     private var errorOut = [String]()
 }
 
-private extension Process {
-    // Hack to avoid warning "Capture of 'task' with non-sendable type 'Process' in a `@Sendable` closure"
-    func asyncWait(continuation: CheckedContinuation<(), Never>) {
-        DispatchQueue.global().async {
-            self.waitUntilExit()
-            continuation.resume()
-        }
-    }
-}
