@@ -95,7 +95,7 @@ final class SwiftBuildCommand: AsyncParsableCommand {
         let checkoutStep: BuildStep = CheckoutStep(checkoutables: Repos.checkoutOrder)
 
         let buildSteps: [BuildStep] = Repos.buildOrder.flatMap { repo -> [BuildStep] in
-            let configure = ConfigureRepoStep(configurableRepo: repo)
+            let configure = ConfigureRepoStep(buildableItem: repo)
             let build = NinjaBuildStep(buildableRepo: repo)
             return [configure, build]
         }

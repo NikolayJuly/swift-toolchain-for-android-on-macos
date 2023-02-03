@@ -16,7 +16,7 @@ enum Repos {
         spm,
     ]
 
-    static let buildOrder: [ConfigurableRepo & BuildableRepo] = [
+    static let buildOrder: [BuildableItem] = [
         llvm,
         cmark,
         yams,
@@ -70,7 +70,7 @@ enum Repos {
     ])
 }
 
-struct LlvmProjectRepo: ConfigurableRepo, BuildableRepo {
+struct LlvmProjectRepo: BuildableItem, Checkoutable {
     let githubUrl = "https://github.com/apple/llvm-project.git"
 
     let buildSubfolder: String? = "llvm"
@@ -95,7 +95,7 @@ struct LlvmProjectRepo: ConfigurableRepo, BuildableRepo {
     ]
 }
 
-struct CMarkRepo: ConfigurableRepo, BuildableRepo {
+struct CMarkRepo: BuildableItem, Checkoutable {
     let githubUrl = "https://github.com/apple/swift-cmark.git"
 
     let cmakeCacheEntries: [String] = [
@@ -105,11 +105,11 @@ struct CMarkRepo: ConfigurableRepo, BuildableRepo {
     ]
 }
 
-struct YamsRepo: ConfigurableRepo, BuildableRepo, ConfigurableRepoDependency {
+struct YamsRepo: BuildableItem, BuildableItemDependency, Checkoutable {
     let githubUrl = "https://github.com/jpsim/yams.git"
 }
 
-struct SwiftArgumentParserRepo: ConfigurableRepo, BuildableRepo, ConfigurableRepoDependency {
+struct SwiftArgumentParserRepo: BuildableItem, BuildableItemDependency, Checkoutable {
 
     let githubUrl = "https://github.com/apple/swift-argument-parser.git"
 
@@ -120,25 +120,25 @@ struct SwiftArgumentParserRepo: ConfigurableRepo, BuildableRepo, ConfigurableRep
     ]
 }
 
-struct SwiftSystemRepo: ConfigurableRepo, BuildableRepo, ConfigurableRepoDependency {
+struct SwiftSystemRepo: BuildableItem, BuildableItemDependency, Checkoutable {
     let githubUrl = "https://github.com/apple/swift-system.git"
 }
 
-struct SwiftToolsSupportCoreRepo: ConfigurableRepo, BuildableRepo, ConfigurableRepoDependency {
+struct SwiftToolsSupportCoreRepo: BuildableItem, BuildableItemDependency, Checkoutable {
     let githubUrl = "https://github.com/apple/swift-tools-support-core.git"
 
     let cmakeCacheEntries: [String] = [
         "SwiftSystem_DIR=/Users/nikolaydzhulay/ws/SwiftAndroid_working/build/swift-system/cmake/modules"
     ]
 
-    let dependencies: [String: ConfigurableRepoDependency]
+    let dependencies: [String: BuildableItemDependency]
 
-    init(dependencies: [String: ConfigurableRepoDependency]) {
+    init(dependencies: [String: BuildableItemDependency]) {
         self.dependencies = dependencies
     }
 }
 
-struct SwiftLLBuildRepo: ConfigurableRepo, BuildableRepo, ConfigurableRepoDependency {
+struct SwiftLLBuildRepo: BuildableItem, BuildableItemDependency, Checkoutable {
     let githubUrl = "https://github.com/apple/swift-llbuild.git"
 
     let cmakeCacheEntries: [String] = [
@@ -149,45 +149,45 @@ struct SwiftLLBuildRepo: ConfigurableRepo, BuildableRepo, ConfigurableRepoDepend
     ]
 }
 
-struct SwiftDriverRepo: ConfigurableRepo, BuildableRepo, ConfigurableRepoDependency {
+struct SwiftDriverRepo: BuildableItem, BuildableItemDependency, Checkoutable {
     let githubUrl = "https://github.com/apple/swift-driver.git"
 
-    let dependencies: [String: ConfigurableRepoDependency]
+    let dependencies: [String: BuildableItemDependency]
 
-    init(dependencies: [String: ConfigurableRepoDependency]) {
+    init(dependencies: [String: BuildableItemDependency]) {
         self.dependencies = dependencies
     }
 }
 
-struct SwiftCryptoRepo: ConfigurableRepo, BuildableRepo, ConfigurableRepoDependency {
+struct SwiftCryptoRepo: BuildableItem, BuildableItemDependency, Checkoutable {
     let githubUrl = "https://github.com/apple/swift-crypto.git"
 }
 
-struct SwiftCollectionsRepo: ConfigurableRepo, BuildableRepo, ConfigurableRepoDependency {
+struct SwiftCollectionsRepo: BuildableItem, BuildableItemDependency, Checkoutable {
     let githubUrl = "https://github.com/apple/swift-collections.git"
 }
 
-struct SPMRepo: ConfigurableRepo, BuildableRepo {
+struct SPMRepo: BuildableItem, Checkoutable {
     let repoName: String = "swiftpm"
 
     let githubUrl = "https://github.com/apple/swift-package-manager.git"
 
-    let dependencies: [String: ConfigurableRepoDependency]
+    let dependencies: [String: BuildableItemDependency]
 
-    init(dependencies: [String: ConfigurableRepoDependency]) {
+    init(dependencies: [String: BuildableItemDependency]) {
         self.dependencies = dependencies
     }
 }
 
 
-struct SwiftRepo: ConfigurableRepo, BuildableRepo {
+struct SwiftRepo: BuildableItem, Checkoutable {
     let githubUrl = "https://github.com/apple/swift.git"
 
     let revision: CheckoutRevision = .tag("swift-5.7-RELEASE")
 
-    let dependencies: [String: ConfigurableRepoDependency]
+    let dependencies: [String: BuildableItemDependency]
 
-    init(dependencies: [String: ConfigurableRepoDependency]) {
+    init(dependencies: [String: BuildableItemDependency]) {
         self.dependencies = dependencies
     }
 
@@ -243,7 +243,7 @@ struct SwiftRepo: ConfigurableRepo, BuildableRepo {
     ]
 }
 
-private struct LLVMModule: ConfigurableRepoDependency {
+private struct LLVMModule: BuildableItemDependency {
     init(llvm: LlvmProjectRepo) {
         self.llvm = llvm
     }
@@ -258,7 +258,7 @@ private struct LLVMModule: ConfigurableRepoDependency {
 }
 
 
-private struct CmarkAsDependency: ConfigurableRepoDependency {
+private struct CmarkAsDependency: BuildableItemDependency {
     init(cmark: CMarkRepo) {
         self.cmark = cmark
     }
