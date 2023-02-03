@@ -195,10 +195,7 @@ struct SwiftRepo: BuildableItem, Checkoutable {
         "SWIFT_DARWIN_DEPLOYMENT_VERSION_OSX=12.0",
         "SWIFT_HOST_VARIANT_ARCH=arm64",
 
-        // SWIFT_ANDROID_NDK_PATH - will be populated by `NDKDependency`
-        "SWIFT_ANDROID_NDK_GCC_VERSION=4.9",
-        "SWIFT_ANDROID_API_LEVEL=21",
-
+        // SWIFT_ANDROID_NDK_PATH, SWIFT_ANDROID_NDK_GCC_VERSION, SWIFT_ANDROID_API_LEVEL - will be populated by `NDKDependency`
 
         "SWIFT_STDLIB_ENABLE_SIL_OWNERSHIP=FALSE",
         "SWIFT_ENABLE_GUARANTEED_NORMAL_ARGUMENTS=TRUE",
@@ -257,7 +254,6 @@ private struct LLVMModule: BuildableItemDependency {
     private let llvm: LlvmProjectRepo
 }
 
-
 private struct CmarkAsDependency: BuildableItemDependency {
     init(cmark: CMarkRepo) {
         self.cmark = cmark
@@ -275,8 +271,13 @@ private struct CmarkAsDependency: BuildableItemDependency {
     private let cmark: CMarkRepo
 }
 
-private struct NDKDependency: ConfigurableRepoDependency {
+private struct NDKDependency: BuildableItemDependency {
     func cmakeDepDirCaheEntry(depName: String, config: BuildConfig) -> [String] {
-        ["SWIFT_ANDROID_NDK_PATH=\"\(config.ndkPath)\""]
+        [
+            "SWIFT_ANDROID_NDK_PATH=\"\(config.ndkPath)\"",
+            // TODO: May be we need to make these value configurable
+            "SWIFT_ANDROID_NDK_GCC_VERSION=4.9",
+            "SWIFT_ANDROID_API_LEVEL=21",
+        ]
     }
 }
