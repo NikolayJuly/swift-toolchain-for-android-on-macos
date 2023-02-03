@@ -39,6 +39,12 @@ public final class ShellCommand {
         let errorPipe = Pipe()
 
         let commandString = command.joined(separator: " ")
+        if let currentDirectoryURL {
+            logger.info("Executing command in directory: \(currentDirectoryURL.path)")
+        }
+        if let environment {
+            logger.info("Command environment:\n\(environment.map { $0.key + ":" + $0.value }.joined(separator: "\n"))")
+        }
         logger.info("Executing command: \(commandString)")
 
         task.standardOutput = pipe
@@ -88,13 +94,19 @@ public final class ShellCommand {
 
         let stdOutputTask = Task {
             for await line in stdOutLines {
+                guard line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
+                    continue
+                }
                 stdOut.append(line)
-                logger.info("In Task: \(line)")
+                logger.info("\(line)")
             }
         }
 
         let errorOutputTask = Task {
             for await line in errOutLines {
+                guard line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
+                    continue
+                }
                 errorOut.append(line)
                 logger.error("\(line)")
             }
@@ -142,7 +154,6 @@ public final class ShellCommand {
     }
 
     // MARK: Private
-
 
     private let command: [String]
     private let currentDirectoryURL: URL?
