@@ -75,17 +75,6 @@ struct LlvmProjectRepo: BuildableItem, Checkoutable {
 
     let buildSubfolder: String? = "llvm"
 
-    let cmakeCacheEntries: [String] = [
-        "LLVM_INCLUDE_EXAMPLES=false",
-        "LLVM_INCLUDE_TESTS=false",
-        "LLVM_INCLUDE_DOCS=false",
-        "LLVM_BUILD_TOOLS=false",
-        "LLVM_INSTALL_BINUTILS_SYMLINKS=false",
-        "LLVM_ENABLE_ASSERTIONS=TRUE",
-        "LLVM_BUILD_EXTERNAL_COMPILER_RT=TRUE",
-        "LLVM_ENABLE_PROJECTS=clang",
-    ]
-
     let targets: [String] = [
         "clang",
         "llvm-tblgen",
@@ -93,16 +82,31 @@ struct LlvmProjectRepo: BuildableItem, Checkoutable {
         "llvm-libraries",
         "clang-libraries"
     ]
+
+    func cmakeCacheEntries(config: BuildConfig) -> [String] {
+        [
+            "LLVM_INCLUDE_EXAMPLES=false",
+            "LLVM_INCLUDE_TESTS=false",
+            "LLVM_INCLUDE_DOCS=false",
+            "LLVM_BUILD_TOOLS=false",
+            "LLVM_INSTALL_BINUTILS_SYMLINKS=false",
+            "LLVM_ENABLE_ASSERTIONS=TRUE",
+            "LLVM_BUILD_EXTERNAL_COMPILER_RT=TRUE",
+            "LLVM_ENABLE_PROJECTS=clang",
+        ]
+    }
 }
 
 struct CMarkRepo: BuildableItem, Checkoutable {
     let githubUrl = "https://github.com/apple/swift-cmark.git"
 
-    let cmakeCacheEntries: [String] = [
-        "CMARK_TESTS=false",
-        "CMAKE_C_FLAGS=\"-Wno-unknown-warning-option -Werror=unguarded-availability-new -fno-stack-protector\"",
-        "CMAKE_CXX_FLAGS=\"-Wno-unknown-warning-option -Werror=unguarded-availability-new -fno-stack-protector\"",
-    ]
+    func cmakeCacheEntries(config: BuildConfig) -> [String] {
+        [
+            "CMARK_TESTS=false",
+            "CMAKE_C_FLAGS=\"-Wno-unknown-warning-option -Werror=unguarded-availability-new -fno-stack-protector\"",
+            "CMAKE_CXX_FLAGS=\"-Wno-unknown-warning-option -Werror=unguarded-availability-new -fno-stack-protector\"",
+        ]
+    }
 }
 
 struct YamsRepo: BuildableItem, BuildableItemDependency, Checkoutable {
@@ -113,11 +117,13 @@ struct SwiftArgumentParserRepo: BuildableItem, BuildableItemDependency, Checkout
 
     let githubUrl = "https://github.com/apple/swift-argument-parser.git"
 
-    let cmakeCacheEntries: [String] = [
-        "BUILD_SHARED_LIBS=YES",
-        "BUILD_EXAMPLES=FALSE",
-        "BUILD_TESTING=FALSE",
-    ]
+    func cmakeCacheEntries(config: BuildConfig) -> [String] {
+        [
+            "BUILD_SHARED_LIBS=YES",
+            "BUILD_EXAMPLES=FALSE",
+            "BUILD_TESTING=FALSE",
+        ]
+    }
 }
 
 struct SwiftSystemRepo: BuildableItem, BuildableItemDependency, Checkoutable {
@@ -127,26 +133,38 @@ struct SwiftSystemRepo: BuildableItem, BuildableItemDependency, Checkoutable {
 struct SwiftToolsSupportCoreRepo: BuildableItem, BuildableItemDependency, Checkoutable {
     let githubUrl = "https://github.com/apple/swift-tools-support-core.git"
 
-    let cmakeCacheEntries: [String] = [
-        "SwiftSystem_DIR=/Users/nikolaydzhulay/ws/SwiftAndroid_working/build/swift-system/cmake/modules"
-    ]
-
     let dependencies: [String: BuildableItemDependency]
 
     init(dependencies: [String: BuildableItemDependency]) {
         self.dependencies = dependencies
+    }
+
+    func cmakeCacheEntries(config: BuildConfig) -> [String] {
+        [
+            "SwiftSystem_DIR=/Users/nikolaydzhulay/ws/SwiftAndroid_working/build/swift-system/cmake/modules"
+        ]
     }
 }
 
 struct SwiftLLBuildRepo: BuildableItem, BuildableItemDependency, Checkoutable {
     let githubUrl = "https://github.com/apple/swift-llbuild.git"
 
-    let cmakeCacheEntries: [String] = [
-        "CMAKE_Swift_FLAGS=\"-Xlinker -v -Xfrontend -target -Xfrontend arm64-apple-macosx10.10 -target arm64-apple-macosx10.10 -v\"",
-        "LLBUILD_SUPPORT_BINDINGS=Swift",
-        "CMAKE_OSX_ARCHITECTURES=arm64",
-        "BUILD_SHARED_LIBS=false",
-    ]
+    func cmakeCacheEntries(config: BuildConfig) -> [String] {
+        // Here we have targer arch and macos version, and I might probably replace arm64 here with macOs arch, but 10.10 make no sense to replace with 12, as few placeses parse and looks like expect 10.x
+        // TODO: Figure out does it work on x86_64, and find actual list of valid values. Will it accept arm64-apple-macosx13.0 ?!
+        //       According to error from cmake, this mcosx13.0 is invalid value
+        //             <unknown>:0: error: unable to load standard library for target 'arm64-apple-macosx13.0'
+        //       Initial value was `arm64-apple-macosx10.10`
+        //       I replaced arch and macOS version here, assuming that same values are valid with x86_64 arch.
+        let target = "\(config.macOsArch)-apple-macosx\(config.macOsTarget)"
+
+        return [
+            "CMAKE_Swift_FLAGS=\"-Xlinker -v -Xfrontend -target -Xllbuild \(target) -target \(target) -v\"",
+            "LLBUILD_SUPPORT_BINDINGS=Swift",
+            "CMAKE_OSX_ARCHITECTURES=\(config.macOsArch)",
+            "BUILD_SHARED_LIBS=false",
+        ]
+    }
 }
 
 struct SwiftDriverRepo: BuildableItem, BuildableItemDependency, Checkoutable {
@@ -179,7 +197,6 @@ struct SPMRepo: BuildableItem, Checkoutable {
     }
 }
 
-
 struct SwiftRepo: BuildableItem, Checkoutable {
     let githubUrl = "https://github.com/apple/swift.git"
 
@@ -191,53 +208,55 @@ struct SwiftRepo: BuildableItem, Checkoutable {
         self.dependencies = dependencies
     }
 
-    let cmakeCacheEntries: [String] = [
-        "SWIFT_DARWIN_DEPLOYMENT_VERSION_OSX=12.0",
-        "SWIFT_HOST_VARIANT_ARCH=arm64",
+    func cmakeCacheEntries(config: BuildConfig) -> [String] {
+        [
+            "SWIFT_DARWIN_DEPLOYMENT_VERSION_OSX=\(config.macOsTarget)",
+            "SWIFT_HOST_VARIANT_ARCH=arm64",
 
-        // SWIFT_ANDROID_NDK_PATH, SWIFT_ANDROID_NDK_GCC_VERSION, SWIFT_ANDROID_API_LEVEL - will be populated by `NDKDependency`
+            // SWIFT_ANDROID_NDK_PATH, SWIFT_ANDROID_NDK_GCC_VERSION, SWIFT_ANDROID_API_LEVEL - will be populated by `NDKDependency`
 
-        "SWIFT_STDLIB_ENABLE_SIL_OWNERSHIP=FALSE",
-        "SWIFT_ENABLE_GUARANTEED_NORMAL_ARGUMENTS=TRUE",
-        "CMAKE_EXPORT_COMPILE_COMMANDS=TRUE",
-        "SWIFT_STDLIB_ENABLE_STDLIBCORE_EXCLUSIVITY_CHECKING=FALSE",
+            "SWIFT_STDLIB_ENABLE_SIL_OWNERSHIP=FALSE",
+            "SWIFT_ENABLE_GUARANTEED_NORMAL_ARGUMENTS=TRUE",
+            "CMAKE_EXPORT_COMPILE_COMMANDS=TRUE",
+            "SWIFT_STDLIB_ENABLE_STDLIBCORE_EXCLUSIVITY_CHECKING=FALSE",
 
-        "SWIFT_ANDROID_DEPLOY_DEVICE_PATH=/data/local/tmp",
-        "SWIFT_SDK_ANDROID_ARCHITECTURES=\"i686;aarch64;armv7;x86_64\"",
-        "SWIFT_BUILD_SOURCEKIT=FALSE",
-        "SWIFT_ENABLE_SOURCEKIT_TESTS=FALSE",
-        "SWIFT_SOURCEKIT_USE_INPROC_LIBRARY=TRUE",
-        "SWIFT_STDLIB_ASSERTIONS=FALSE",
-        "SWIFT_INCLUDE_TOOLS=TRUE",
-        "SWIFT_BUILD_REMOTE_MIRROR=TRUE",
-        "SWIFT_STDLIB_SIL_DEBUGGING=FALSE",
-        "SWIFT_BUILD_DYNAMIC_STDLIB=FALSE",
-        "SWIFT_BUILD_STATIC_STDLIB=FALSE",
-        "SWIFT_BUILD_DYNAMIC_SDK_OVERLAY=FALSE",
-        "SWIFT_BUILD_STATIC_SDK_OVERLAY=FALSE",
-        "SWIFT_BUILD_PERF_TESTSUITE=FALSE",
-        "SWIFT_BUILD_EXTERNAL_PERF_TESTSUITE=FALSE",
-        "SWIFT_BUILD_EXAMPLES=FALSE",
-        "SWIFT_INCLUDE_TESTS=FALSE",
-        "SWIFT_INCLUDE_DOCS=FALSE",
-        "SWIFT_INSTALL_COMPONENTS='autolink-driver;compiler;clang-builtin-headers;stdlib;swift-remote-mirror;sdk-overlay;license'",
-        "SWIFT_ENABLE_LLD_LINKER=FALSE",
-        "SWIFT_ENABLE_GOLD_LINKER=TRUE",
-        "SWIFT_ENABLE_DISPATCH=false",
-        "LIBDISPATCH_CMAKE_BUILD_TYPE=Release",
-        "SWIFT_OVERLAY_TARGETS=''",
-        "SWIFT_HOST_VARIANT=macosx",
-        "SWIFT_HOST_VARIANT_SDK=OSX",
-        "SWIFT_ENABLE_IOS32=false",
-        "SWIFT_SDKS='ANDROID;OSX'",
-        "SWIFT_PRIMARY_VARIANT_SDK=ANDROID",
-        "SWIFT_AST_VERIFIER=FALSE",
-        "SWIFT_RUNTIME_ENABLE_LEAK_CHECKER=FALSE",
-        "SWIFT_STDLIB_SUPPORT_BACK_DEPLOYMENT=FALSE",
-        "LLVM_LIT_ARGS=-sv",
-        "LLVM_ENABLE_ASSERTIONS=TRUE",
-        "COVERAGE_DB=",
-    ]
+            "SWIFT_ANDROID_DEPLOY_DEVICE_PATH=/data/local/tmp",
+            "SWIFT_SDK_ANDROID_ARCHITECTURES=\"\(AndroidArchs.all.map { $0.swiftArch }.joined(separator: ","))\"",
+            "SWIFT_BUILD_SOURCEKIT=FALSE",
+            "SWIFT_ENABLE_SOURCEKIT_TESTS=FALSE",
+            "SWIFT_SOURCEKIT_USE_INPROC_LIBRARY=TRUE",
+            "SWIFT_STDLIB_ASSERTIONS=FALSE",
+            "SWIFT_INCLUDE_TOOLS=TRUE",
+            "SWIFT_BUILD_REMOTE_MIRROR=TRUE",
+            "SWIFT_STDLIB_SIL_DEBUGGING=FALSE",
+            "SWIFT_BUILD_DYNAMIC_STDLIB=FALSE",
+            "SWIFT_BUILD_STATIC_STDLIB=FALSE",
+            "SWIFT_BUILD_DYNAMIC_SDK_OVERLAY=FALSE",
+            "SWIFT_BUILD_STATIC_SDK_OVERLAY=FALSE",
+            "SWIFT_BUILD_PERF_TESTSUITE=FALSE",
+            "SWIFT_BUILD_EXTERNAL_PERF_TESTSUITE=FALSE",
+            "SWIFT_BUILD_EXAMPLES=FALSE",
+            "SWIFT_INCLUDE_TESTS=FALSE",
+            "SWIFT_INCLUDE_DOCS=FALSE",
+            "SWIFT_INSTALL_COMPONENTS='autolink-driver;compiler;clang-builtin-headers;stdlib;swift-remote-mirror;sdk-overlay;license'",
+            "SWIFT_ENABLE_LLD_LINKER=FALSE",
+            "SWIFT_ENABLE_GOLD_LINKER=TRUE",
+            "SWIFT_ENABLE_DISPATCH=false",
+            "LIBDISPATCH_CMAKE_BUILD_TYPE=Release",
+            "SWIFT_OVERLAY_TARGETS=''",
+            "SWIFT_HOST_VARIANT=macosx",
+            "SWIFT_HOST_VARIANT_SDK=OSX",
+            "SWIFT_ENABLE_IOS32=false",
+            "SWIFT_SDKS='ANDROID;OSX'",
+            "SWIFT_PRIMARY_VARIANT_SDK=ANDROID",
+            "SWIFT_AST_VERIFIER=FALSE",
+            "SWIFT_RUNTIME_ENABLE_LEAK_CHECKER=FALSE",
+            "SWIFT_STDLIB_SUPPORT_BACK_DEPLOYMENT=FALSE",
+            "LLVM_LIT_ARGS=-sv",
+            "LLVM_ENABLE_ASSERTIONS=TRUE",
+            "COVERAGE_DB=",
+        ]
+    }
 }
 
 private struct LLVMModule: BuildableItemDependency {
@@ -275,9 +294,9 @@ private struct NDKDependency: BuildableItemDependency {
     func cmakeDepDirCaheEntry(depName: String, config: BuildConfig) -> [String] {
         [
             "SWIFT_ANDROID_NDK_PATH=\"\(config.ndkPath)\"",
-            // TODO: May be we need to make these value configurable
-            "SWIFT_ANDROID_NDK_GCC_VERSION=4.9",
-            "SWIFT_ANDROID_API_LEVEL=21",
+            "SWIFT_ANDROID_NDK_GCC_VERSION=" + config.ndkGccVersion,
+            "SWIFT_ANDROID_API_LEVEL=" + config.androidApiLevel,
         ]
     }
 }
+

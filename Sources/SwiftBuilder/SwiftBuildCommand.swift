@@ -15,13 +15,38 @@ struct BuildConfig {
     var logsFolder: URL { workingFolder.appendingPathComponent("logs", isDirectory: true) }
 
     var buildsRootFolder: URL { workingFolder.appendingPathComponent("build", isDirectory: true) }
+
+    // TODO: May be we need to make these value configurable
+    let androidApiLevel: String = "21"
+    let ndkGccVersion: String = "4.9"
+    var ndkToolchain: String {
+        ndkPath + "/toolchains/llvm/prebuilt/darwin-x86_64"
+    }
+
+    let macOsTarget = "12.0" // deployment target
+    let macOsArch = "arm64"
 }
 
 protocol BuildStep {
 
     var stepName: String { get }
 
+    /// Some steps might have dependencies, where we might re-run step even if we completed it
+    func shouldBeExecuted(_ completedSteps: [String]) -> Bool
+
+    /// Reset state to initial one. For example,  reset changes in repo from prev actions
+    func prepare(_ config: BuildConfig, logger: Logger) async throws
+
     func execute(_ config: BuildConfig, logger: Logger) async throws
+}
+
+extension BuildStep {
+    func shouldBeExecuted(_ completedSteps: [String]) -> Bool {
+        let alreadyCompleted = completedSteps.contains(stepName)
+        return !alreadyCompleted
+    }
+
+    func prepare(_ config: BuildConfig, logger: Logger) async throws { }
 }
 
 @main
@@ -62,9 +87,9 @@ final class SwiftBuildCommand: AsyncParsableCommand {
             let step = steps[i]
 
             // Check - may be we already completed this step
-            let alreadyCompleted = buildProgress.completedSteps.contains(step.stepName)
+            let shouldBeExecuted = step.shouldBeExecuted(buildProgress.completedSteps)
 
-            guard !alreadyCompleted else {
+            guard shouldBeExecuted else {
                 terminal.output("Skipping step \(step.stepName)")
                 continue
             }

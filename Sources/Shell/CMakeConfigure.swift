@@ -6,11 +6,13 @@ public final class CMakeConfigure {
                 cmakePath: String,
                 buildFolder: URL,
                 cacheEntries: [String],
+                macOsTarget: String,
                 logger: Logger) {
         self.folderUrl = folderUrl
         self.cmakePath = cmakePath
         self.buildFolder = buildFolder
         self.cacheEntries = cacheEntries
+        self.macOsTarget = macOsTarget
         self.logger = logger
     }
 
@@ -21,7 +23,7 @@ public final class CMakeConfigure {
             "-S", folderUrl.path,
             "-B", buildFolder.path,
             "-D", "CMAKE_INSTALL_PREFIX=/",
-            "-D", "CMAKE_OSX_DEPLOYMENT_TARGET=12.0",
+            "-D", "CMAKE_OSX_DEPLOYMENT_TARGET=\(macOsTarget)",
             "-D", "CMAKE_BUILD_TYPE=Release"
         ] + cacheEntries.flatMap { ["-D", $0] }
         let command = ShellCommand(commandParths,
@@ -36,5 +38,6 @@ public final class CMakeConfigure {
     private let cmakePath: String
     private let buildFolder: URL
     private let cacheEntries: [String]
+    private let macOsTarget: String
     private let logger: Logger
 }
