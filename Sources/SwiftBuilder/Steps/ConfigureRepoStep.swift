@@ -19,8 +19,6 @@ protocol BuildableItem {
     // Will be used as folder or file name part, where needed
     var name: String { get }
 
-    var cmakeCacheEntries: [String] { get }
-
     var buildSubfolder: String? { get }
 
     var dependencies: [String: BuildableItemDependency] { get }
@@ -28,17 +26,19 @@ protocol BuildableItem {
     var targets: [String] { get }
 
     func sourceLocation(using buildConfig: BuildConfig) -> URL
+
+    func cmakeCacheEntries(config: BuildConfig) -> [String]
 }
 
 extension BuildableItem {
-    var cmakeCacheEntries: [String] { [] }
-
     var buildSubfolder: String? { nil }
 
     var dependencies: [String: BuildableItemDependency] { [:] }
 
     // Most of repos has 1 default target
     var targets: [String] { [] }
+
+    func cmakeCacheEntries(config: BuildConfig) -> [String] { [] }
 }
 
 extension BuildableItem where Self: Checkoutable {
@@ -60,13 +60,33 @@ extension BuildConfig {
 }
 
 final class ConfigureRepoStep: BuildStep {
-
     var stepName: String {
         "configure-" + buildableItem.name
     }
 
     init(buildableItem: BuildableItem) {
         self.buildableItem = buildableItem
+    }
+
+    func shouldBeExecuted(_ completedSteps: [String]) -> Bool {
+        // if build failed, we might want ro re-run configure, because we might change smake cache to fix it
+        let buildStepName = NinjaBuildStep.buildStepName(for: buildableItem)
+        let buildAlreadyCompleted = completedSteps.contains(buildStepName)
+        return !buildAlreadyCompleted
+    }
+
+    func prepare(_ config: BuildConfig, logger: Logging.Logger) async throws {
+        // I would prefer don't have secret check for other protocol, but looks like simplest solution for now
+        if let checkoutable = buildableItem as? Checkoutable {
+            logger.info("Step is `Checkoutable`, so executing git reset to needed revision")
+            let object: String = try checkoutable.checkoutObject(using: self.defaultRevisionsMap)
+            let repoFolder = config.location(for: checkoutable)
+            let gitReset = GitReset(repoUrl: repoFolder, object: object, logger: logger)
+            try await gitReset.execute()
+        }
+
+        let repoBuildFolder = config.buildLocation(for: buildableItem)
+        try? fileManager.removeItem(at: repoBuildFolder)
     }
 
     func execute(_ config: BuildConfig, logger: Logger) async throws {
@@ -83,6 +103,8 @@ final class ConfigureRepoStep: BuildStep {
         let repoBuildFolder = config.buildLocation(for: buildableItem)
         try fileManager.createEmptyFolder(at: repoBuildFolder)
 
+        let cmakeCacheEntries = buildableItem.cmakeCacheEntries(config: config)
+
         let depCacheEntries: [String] = buildableItem.dependencies.flatMap { keyValue in
             let depName = keyValue.key
             let dep = keyValue.value
@@ -92,7 +114,8 @@ final class ConfigureRepoStep: BuildStep {
         let config = CMakeConfigure(folderUrl: repoFolder,
                                     cmakePath: config.cmakePath,
                                     buildFolder: repoBuildFolder,
-                                    cacheEntries: buildableItem.cmakeCacheEntries + depCacheEntries,
+                                    cacheEntries: cmakeCacheEntries + depCacheEntries,
+                                    macOsTarget: config.macOsTarget,
                                     logger: logger)
         try await config.execute()
 
@@ -108,4 +131,5 @@ final class ConfigureRepoStep: BuildStep {
     private let buildableItem: BuildableItem
     private var fileManager: FileManager { FileManager.default }
     private let terminal = Terminal()
+    private let defaultRevisionsMap = DefaultRevisionsMap()
 }

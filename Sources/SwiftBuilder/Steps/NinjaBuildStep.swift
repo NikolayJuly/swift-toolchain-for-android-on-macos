@@ -4,8 +4,13 @@ import Logging
 import Shell
 
 final class NinjaBuildStep: BuildStep {
-    var stepName: String {
+
+    static func buildStepName(for buildableRepo: BuildableItem) -> String {
         "build-" + buildableRepo.name
+    }
+
+    var stepName: String {
+        Self.buildStepName(for: buildableRepo)
     }
 
     init(buildableRepo: BuildableItem) {

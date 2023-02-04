@@ -103,6 +103,8 @@ final class SwiftBuildCommand: AsyncParsableCommand {
                 fileLogger.handler(label: label)
             }
 
+            try await step.prepare(buildConfig, logger: stepLogger)
+
             try await step.execute(buildConfig, logger: stepLogger)
 
             buildProgress = buildProgress.updated(byAdding: step.stepName)

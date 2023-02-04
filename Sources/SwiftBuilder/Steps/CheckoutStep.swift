@@ -24,6 +24,30 @@ protocol Checkoutable {
 }
 
 extension Checkoutable {
+    func checkoutObject(using defaultRevisionsMap: DefaultRevisionsMap) throws -> String {
+        var revision = self.revision
+        if revision == .parseFromUpdateCheckoutOuput {
+            guard let defaultRevision = defaultRevisionsMap[repoName] else {
+                throw "No default revision for \(repoName)"
+            }
+            revision = defaultRevision
+        }
+
+        let object: String
+        switch revision {
+        case let .commit(hash):
+            object = hash
+        case let .tag(tag):
+            object = tag
+        case .parseFromUpdateCheckoutOuput:
+            throw "Unepected value of revision for \(repoName)"
+        }
+
+        return object
+    }
+}
+
+extension Checkoutable {
     var repoName: String {
         githubUrl.components(separatedBy: "/").last!.fileNameByRemovingExtension
     }
@@ -79,23 +103,7 @@ actor CheckoutStep: BuildStep {
                     try await self.clone(checkoutable, config: config, logger: logger)
                 }
 
-                var revision = checkoutable.revision
-                if revision == .parseFromUpdateCheckoutOuput {
-                    guard let defaultRevision = self.defaultRevisionsMap[checkoutable.repoName] else {
-                        throw "No default revision for \(checkoutable.repoName)"
-                    }
-                    revision = defaultRevision
-                }
-
-                let object: String
-                switch revision {
-                case let .commit(hash):
-                    object = hash
-                case let .tag(tag):
-                    object = tag
-                case .parseFromUpdateCheckoutOuput:
-                    throw "Unepected value of revision for \(checkoutable.repoName)"
-                }
+                let object: String = try checkoutable.checkoutObject(using: self.defaultRevisionsMap)
 
                 logger.info("Checking out \(object) in \(checkoutable.repoName)")
 
