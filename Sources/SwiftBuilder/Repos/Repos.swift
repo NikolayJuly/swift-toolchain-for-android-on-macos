@@ -159,7 +159,7 @@ struct SwiftLLBuildRepo: BuildableItem, BuildableItemDependency, Checkoutable {
         let target = "\(config.macOsArch)-apple-macosx\(config.macOsTarget)"
 
         return [
-            "CMAKE_Swift_FLAGS=\"-Xlinker -v -Xfrontend -target -Xllbuild \(target) -target \(target) -v\"",
+            "CMAKE_Swift_FLAGS=\"-Xlinker -v -Xfrontend -target -Xfrontend \(target) -target \(target) -v\"",
             "LLBUILD_SUPPORT_BINDINGS=Swift",
             "CMAKE_OSX_ARCHITECTURES=\(config.macOsArch)",
             "BUILD_SHARED_LIBS=false",
