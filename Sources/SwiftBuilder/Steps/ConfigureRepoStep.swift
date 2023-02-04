@@ -25,6 +25,8 @@ protocol BuildableItem {
 
     var targets: [String] { get }
 
+    var underlyingRepo: Checkoutable? { get }
+
     func sourceLocation(using buildConfig: BuildConfig) -> URL
 
     func cmakeCacheEntries(config: BuildConfig) -> [String]
@@ -50,6 +52,10 @@ extension BuildableItem where Self: Checkoutable {
             resUrl = resUrl.appendingPathComponent(buildSubfolder, isDirectory: true)
         }
         return resUrl
+    }
+
+    var underlyingRepo: Checkoutable? {
+        return self
     }
 }
 
@@ -77,12 +83,15 @@ final class ConfigureRepoStep: BuildStep {
 
     func prepare(_ config: BuildConfig, logger: Logging.Logger) async throws {
         // I would prefer don't have secret check for other protocol, but looks like simplest solution for now
-        if let checkoutable = buildableItem as? Checkoutable {
+        if let checkoutable = buildableItem.underlyingRepo {
             logger.info("Step is `Checkoutable`, so executing git reset to needed revision")
             let object: String = try checkoutable.checkoutObject(using: self.defaultRevisionsMap)
             let repoFolder = config.location(for: checkoutable)
             let gitReset = GitReset(repoUrl: repoFolder, object: object, logger: logger)
             try await gitReset.execute()
+
+            logger.info("Checking for a ptach for \(checkoutable.repoName)")
+            try await applyPatch(to: checkoutable, config: config, logger: logger)
         }
 
         let repoBuildFolder = config.buildLocation(for: buildableItem)
@@ -97,7 +106,6 @@ final class ConfigureRepoStep: BuildStep {
         terminal.output(stepNameText + status)
 
         let repoFolder = buildableItem.sourceLocation(using: config)
-
 
         try fileManager.createFolderIfNotExists(at: config.buildsRootFolder)
         let repoBuildFolder = config.buildLocation(for: buildableItem)
@@ -132,4 +140,25 @@ final class ConfigureRepoStep: BuildStep {
     private var fileManager: FileManager { FileManager.default }
     private let terminal = Terminal()
     private let defaultRevisionsMap = DefaultRevisionsMap()
+
+    private func applyPatch(to checkoutable: Checkoutable, config: BuildConfig, logger: Logger) async throws {
+        let patchesFolder = config.sourceRoot.appendingPathComponent("Patches", isDirectory: true)
+
+        logger.info("Looking for patch named \(buildableItem.name) in \(patchesFolder.path)")
+
+        let patches = try fileManager.contentsOfDirectory(atPath: patchesFolder.path)
+
+        let desiredPatchFilename = buildableItem.name + ".patch"
+
+        guard patches.contains(desiredPatchFilename) else {
+            logger.info("There is no patch \(desiredPatchFilename)")
+            return
+        }
+
+        let patchFileUrl = patchesFolder.appendingPathComponent(desiredPatchFilename, isDirectory: false)
+
+        let repoFolder = config.location(for: checkoutable)
+        let gitApply = ShellCommand("git", "apply", patchFileUrl.path, currentDirectoryURL: repoFolder, logger: logger)
+        try await gitApply.execute()
+    }
 }

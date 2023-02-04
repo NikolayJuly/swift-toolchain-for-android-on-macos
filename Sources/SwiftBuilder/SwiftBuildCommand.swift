@@ -7,6 +7,7 @@ import Shell
 
 struct BuildConfig {
     let workingFolder: URL
+    let sourceRoot: URL
 
     let cmakePath: String
 
@@ -65,6 +66,11 @@ final class SwiftBuildCommand: AsyncParsableCommand {
                            help: "Path installed NDK, we expect v25 (25.1.8937393 exactly)")
     var ndkPath: String
 
+    @ArgumentParser.Option(name: .long,
+                           help: "Path to folder, containing package file",
+                           transform: { URL(fileURLWithPath: $0, isDirectory: true) })
+    var sourceRoot: URL
+
     func validate() throws {
         // I know that this function throw error, if failed to create needed folder
         try fileManager.createFolderIfNotExists(at: workingFolder)
@@ -79,7 +85,10 @@ final class SwiftBuildCommand: AsyncParsableCommand {
 
         terminal.output("\n\nStart building process\n")
 
-        let buildConfig = BuildConfig(workingFolder: workingFolder, cmakePath: cmakePath, ndkPath: ndkPath)
+        let buildConfig = BuildConfig(workingFolder: workingFolder,
+                                      sourceRoot: sourceRoot,
+                                      cmakePath: cmakePath,
+                                      ndkPath: ndkPath)
 
         try fileManager.createFolderIfNotExists(at: buildConfig.logsFolder)
 
@@ -103,8 +112,10 @@ final class SwiftBuildCommand: AsyncParsableCommand {
                 fileLogger.handler(label: label)
             }
 
+            terminal.output("Executing `prepare` for \(step.stepName)...")
             try await step.prepare(buildConfig, logger: stepLogger)
 
+            terminal.output("Execuring \(step.stepName)...")
             try await step.execute(buildConfig, logger: stepLogger)
 
             buildProgress = buildProgress.updated(byAdding: step.stepName)
