@@ -14,10 +14,15 @@ public actor GitReset {
     }
 
     public func execute() async throws {
-        let command = ShellCommand("git", "reset", "--hard", object,
+        let clean = ShellCommand("git", "clean", "-f",
+                                 currentDirectoryURL: repoUrl,
+                                 logger: logger)
+        _ = try await clean.execute()
+
+        let reset = ShellCommand("git", "reset", "--hard", object,
                                    currentDirectoryURL: repoUrl,
                                    logger: logger)
-        _ = try await command.execute()
+        _ = try await reset.execute()
     }
 
     // MARK: Private
