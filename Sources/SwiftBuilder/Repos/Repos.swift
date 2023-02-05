@@ -296,6 +296,7 @@ private struct NDKDependency: BuildableItemDependency {
             "SWIFT_ANDROID_NDK_PATH=\"\(config.ndkPath)\"",
             "SWIFT_ANDROID_NDK_GCC_VERSION=" + config.ndkGccVersion,
             "SWIFT_ANDROID_API_LEVEL=" + config.androidApiLevel,
+            "SWIFT_ANDROID_NDK_CLANG_VERSION=" + config.ndkClangVersion,
         ]
     }
 }

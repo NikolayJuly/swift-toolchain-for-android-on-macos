@@ -20,6 +20,7 @@ struct BuildConfig {
     // TODO: May be we need to make these value configurable
     let androidApiLevel: String = "21"
     let ndkGccVersion: String = "4.9"
+    let ndkClangVersion: String = "14.0.6"
     var ndkToolchain: String {
         ndkPath + "/toolchains/llvm/prebuilt/darwin-x86_64"
     }
