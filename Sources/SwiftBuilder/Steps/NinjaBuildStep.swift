@@ -3,28 +3,24 @@ import Foundation
 import Logging
 import Shell
 
-protocol BuildableRepo: Checkoutable {
-    var targets: [String] { get }
-}
-
-extension BuildableRepo {
-    // Most of repos has 1 default target
-    var targets: [String] { [] }
-}
-
 final class NinjaBuildStep: BuildStep {
-    var stepName: String {
-        "build-" + buildableRepo.repoName
+
+    static func buildStepName(for buildableRepo: BuildableItem) -> String {
+        "build-" + buildableRepo.name
     }
 
-    init(buildableRepo: BuildableRepo) {
+    var stepName: String {
+        Self.buildStepName(for: buildableRepo)
+    }
+
+    init(buildableRepo: BuildableItem) {
         self.buildableRepo = buildableRepo
     }
 
     func execute(_ config: BuildConfig, logger: Logger) async throws {
         let timeMesurement = TimeMesurement()
         terminal.pushEphemeral()
-        let stepNameText = "Build \(buildableRepo.repoName): ".consoleText(.plain)
+        let stepNameText = "Build \(buildableRepo.name): ".consoleText(.plain)
         var status = "Building...".consoleText(ConsoleStyle(color: .blue))
         terminal.output(stepNameText + status)
 
@@ -50,6 +46,6 @@ final class NinjaBuildStep: BuildStep {
 
     // MARK: Private
 
-    private let buildableRepo: BuildableRepo
+    private let buildableRepo: BuildableItem
     private let terminal = Terminal()
 }

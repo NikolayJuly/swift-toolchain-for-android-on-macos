@@ -7,6 +7,7 @@ import Shell
 
 struct BuildConfig {
     let workingFolder: URL
+    let sourceRoot: URL
 
     let cmakePath: String
 
@@ -15,13 +16,34 @@ struct BuildConfig {
     var logsFolder: URL { workingFolder.appendingPathComponent("logs", isDirectory: true) }
 
     var buildsRootFolder: URL { workingFolder.appendingPathComponent("build", isDirectory: true) }
+
+    // TODO: May be we need to make these value configurable
+    let androidApiLevel: String = "21"
+    let ndkGccVersion: String = "4.9"
+    let ndkClangVersion: String = "14.0.6"
+    var ndkToolchain: String {
+        ndkPath + "/toolchains/llvm/prebuilt/darwin-x86_64"
+    }
+
+    let macOsTarget = "12.0" // deployment target
+    let macOsArch = "arm64"
 }
 
 protocol BuildStep {
 
     var stepName: String { get }
 
+    /// Some steps might have dependencies, where we might re-run step even if we completed it
+    func shouldBeExecuted(_ completedSteps: [String]) -> Bool
+
     func execute(_ config: BuildConfig, logger: Logger) async throws
+}
+
+extension BuildStep {
+    func shouldBeExecuted(_ completedSteps: [String]) -> Bool {
+        let alreadyCompleted = completedSteps.contains(stepName)
+        return !alreadyCompleted
+    }
 }
 
 @main
@@ -40,6 +62,11 @@ final class SwiftBuildCommand: AsyncParsableCommand {
                            help: "Path installed NDK, we expect v25 (25.1.8937393 exactly)")
     var ndkPath: String
 
+    @ArgumentParser.Option(name: .long,
+                           help: "Path to folder, containing package file",
+                           transform: { URL(fileURLWithPath: $0, isDirectory: true) })
+    var sourceRoot: URL
+
     func validate() throws {
         // I know that this function throw error, if failed to create needed folder
         try fileManager.createFolderIfNotExists(at: workingFolder)
@@ -54,7 +81,10 @@ final class SwiftBuildCommand: AsyncParsableCommand {
 
         terminal.output("\n\nStart building process\n")
 
-        let buildConfig = BuildConfig(workingFolder: workingFolder, cmakePath: cmakePath, ndkPath: ndkPath)
+        let buildConfig = BuildConfig(workingFolder: workingFolder,
+                                      sourceRoot: sourceRoot,
+                                      cmakePath: cmakePath,
+                                      ndkPath: ndkPath)
 
         try fileManager.createFolderIfNotExists(at: buildConfig.logsFolder)
 
@@ -62,9 +92,9 @@ final class SwiftBuildCommand: AsyncParsableCommand {
             let step = steps[i]
 
             // Check - may be we already completed this step
-            let alreadyCompleted = buildProgress.completedSteps.contains(step.stepName)
+            let shouldBeExecuted = step.shouldBeExecuted(buildProgress.completedSteps)
 
-            guard !alreadyCompleted else {
+            guard shouldBeExecuted else {
                 terminal.output("Skipping step \(step.stepName)")
                 continue
             }
@@ -80,8 +110,10 @@ final class SwiftBuildCommand: AsyncParsableCommand {
 
             try await step.execute(buildConfig, logger: stepLogger)
 
-            buildProgress = buildProgress.updated(byAdding: step.stepName)
-            try buildProgress.save(to: workingFolder)
+            if buildProgress.completedSteps.contains(step.stepName) == false {
+                buildProgress = buildProgress.updated(byAdding: step.stepName)
+                try buildProgress.save(to: workingFolder)
+            }
         }
     }
 
@@ -95,7 +127,7 @@ final class SwiftBuildCommand: AsyncParsableCommand {
         let checkoutStep: BuildStep = CheckoutStep(checkoutables: Repos.checkoutOrder)
 
         let buildSteps: [BuildStep] = Repos.buildOrder.flatMap { repo -> [BuildStep] in
-            let configure = ConfigureRepoStep(configurableRepo: repo)
+            let configure = ConfigureRepoStep(buildableItem: repo)
             let build = NinjaBuildStep(buildableRepo: repo)
             return [configure, build]
         }

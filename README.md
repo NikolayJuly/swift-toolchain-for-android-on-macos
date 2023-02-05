@@ -4,6 +4,7 @@ Swift toolchain for android on macos
 
 ## Prerequisites
 - You are on arm64 mac
+- Recent xcode vetsion installed on mac
 - Install NDK and CMake. (Instructions)[https://developer.android.com/studio/projects/install-ndk]
 
 ## Execute
@@ -20,7 +21,7 @@ PATH_TO_NDK_V25 - `~/Library/Android/sdk/ndk/25.1.8937393`
 
 While building, we will save progress with completed steps in `current-progress.json`. 
 This helps us avoid re-running long build operations, if we encountered any problem
-If you want start from scratch - just delete this file from working folder
+If you want start from scratch - just delete this file from working folder. Alternatively, you can manually remove steps, which you want to repeat
 
 
 ## How to update code fore new release
