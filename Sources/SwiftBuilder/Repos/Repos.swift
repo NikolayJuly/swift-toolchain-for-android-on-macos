@@ -297,8 +297,9 @@ struct StdLib: BuildableItem {
 
     let dependencies: [String: BuildableItemDependency]
 
-    var underlyingRepo: Checkoutable? {
-        return swift
+    var underlyingRepo: BuildableItemRepo? {
+        BuildableItemRepo(checkoutable: swift,
+                          patchFileName: "stdlib.patch")
     }
 
     func sourceLocation(using buildConfig: BuildConfig) -> URL {

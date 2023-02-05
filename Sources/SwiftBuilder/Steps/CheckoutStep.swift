@@ -122,7 +122,8 @@ actor CheckoutStep: BuildStep {
 
         try await workPoolDrainer.wait()
 
-        terminal.output("Checkout completed in \(timeMesurement.durationString)")
+        let status = "Checkout ".consoleText(.plain) + "Done".consoleText(ConsoleStyle(color: .green)) +  " in \(timeMesurement.durationString).".consoleText(.plain)
+        terminal.output(status)
     }
 
     // MARK: Private

@@ -36,9 +36,6 @@ protocol BuildStep {
     /// Some steps might have dependencies, where we might re-run step even if we completed it
     func shouldBeExecuted(_ completedSteps: [String]) -> Bool
 
-    /// Reset state to initial one. For example,  reset changes in repo from prev actions
-    func prepare(_ config: BuildConfig, logger: Logger) async throws
-
     func execute(_ config: BuildConfig, logger: Logger) async throws
 }
 
@@ -47,8 +44,6 @@ extension BuildStep {
         let alreadyCompleted = completedSteps.contains(stepName)
         return !alreadyCompleted
     }
-
-    func prepare(_ config: BuildConfig, logger: Logger) async throws { }
 }
 
 @main
@@ -113,14 +108,12 @@ final class SwiftBuildCommand: AsyncParsableCommand {
                 fileLogger.handler(label: label)
             }
 
-            terminal.output("Executing `prepare` for \(step.stepName)...")
-            try await step.prepare(buildConfig, logger: stepLogger)
-
-            terminal.output("Execuring \(step.stepName)...")
             try await step.execute(buildConfig, logger: stepLogger)
 
-            buildProgress = buildProgress.updated(byAdding: step.stepName)
-            try buildProgress.save(to: workingFolder)
+            if buildProgress.completedSteps.contains(step.stepName) == false {
+                buildProgress = buildProgress.updated(byAdding: step.stepName)
+                try buildProgress.save(to: workingFolder)
+            }
         }
     }
 

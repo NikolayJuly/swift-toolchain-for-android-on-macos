@@ -15,6 +15,11 @@ extension BuildableItemDependency where Self: BuildableItem {
     }
 }
 
+struct BuildableItemRepo {
+    let checkoutable: Checkoutable
+    let patchFileName: String
+}
+
 protocol BuildableItem {
     // Will be used as folder or file name part, where needed
     var name: String { get }
@@ -25,7 +30,7 @@ protocol BuildableItem {
 
     var targets: [String] { get }
 
-    var underlyingRepo: Checkoutable? { get }
+    var underlyingRepo: BuildableItemRepo? { get }
 
     func sourceLocation(using buildConfig: BuildConfig) -> URL
 
@@ -39,6 +44,8 @@ extension BuildableItem {
 
     // Most of repos has 1 default target
     var targets: [String] { [] }
+
+    var patchFileName: String { name }
 
     func cmakeCacheEntries(config: BuildConfig) -> [String] { [] }
 }
@@ -54,8 +61,9 @@ extension BuildableItem where Self: Checkoutable {
         return resUrl
     }
 
-    var underlyingRepo: Checkoutable? {
-        return self
+    var underlyingRepo: BuildableItemRepo? {
+        BuildableItemRepo(checkoutable: self,
+                          patchFileName: repoName + ".patch")
     }
 }
 
@@ -81,28 +89,21 @@ final class ConfigureRepoStep: BuildStep {
         return !buildAlreadyCompleted
     }
 
-    func prepare(_ config: BuildConfig, logger: Logging.Logger) async throws {
-        // I would prefer don't have secret check for other protocol, but looks like simplest solution for now
-        if let checkoutable = buildableItem.underlyingRepo {
-            logger.info("Step is `Checkoutable`, so executing git reset to needed revision")
-            let object: String = try checkoutable.checkoutObject(using: self.defaultRevisionsMap)
-            let repoFolder = config.location(for: checkoutable)
-            let gitReset = GitReset(repoUrl: repoFolder, object: object, logger: logger)
-            try await gitReset.execute()
-
-            logger.info("Checking for a ptach for \(checkoutable.repoName)")
-            try await applyPatch(to: checkoutable, config: config, logger: logger)
-        }
-
-        let repoBuildFolder = config.buildLocation(for: buildableItem)
-        try? fileManager.removeItem(at: repoBuildFolder)
-    }
-
     func execute(_ config: BuildConfig, logger: Logger) async throws {
         let timeMesurement = TimeMesurement()
         terminal.pushEphemeral()
+
         let stepNameText = "Configure \(buildableItem.name): ".consoleText(.plain)
-        var status = "Configuring...".consoleText(ConsoleStyle(color: .blue))
+
+        var status = "Preparing...".consoleText(ConsoleStyle(color: .blue))
+        terminal.output(stepNameText + status)
+
+        try await prepare(config, logger: logger)
+
+        terminal.popEphemeral()
+        terminal.pushEphemeral()
+
+        status = "Configuring...".consoleText(ConsoleStyle(color: .blue))
         terminal.output(stepNameText + status)
 
         let repoFolder = buildableItem.sourceLocation(using: config)
@@ -141,24 +142,44 @@ final class ConfigureRepoStep: BuildStep {
     private let terminal = Terminal()
     private let defaultRevisionsMap = DefaultRevisionsMap()
 
-    private func applyPatch(to checkoutable: Checkoutable, config: BuildConfig, logger: Logger) async throws {
+    private func applyPatch(to repo: BuildableItemRepo, config: BuildConfig, logger: Logger) async throws {
+        let checkoutable = repo.checkoutable
+
+        logger.info("Checking for a patch for \(repo.patchFileName)")
+
         let patchesFolder = config.sourceRoot.appendingPathComponent("Patches", isDirectory: true)
 
         logger.info("Looking for patch named \(buildableItem.name) in \(patchesFolder.path)")
 
         let patches = try fileManager.contentsOfDirectory(atPath: patchesFolder.path)
 
-        let desiredPatchFilename = buildableItem.name + ".patch"
-
-        guard patches.contains(desiredPatchFilename) else {
-            logger.info("There is no patch \(desiredPatchFilename)")
+        guard patches.contains(repo.patchFileName) else {
+            logger.info("There is no patch \(repo.patchFileName)")
             return
         }
 
-        let patchFileUrl = patchesFolder.appendingPathComponent(desiredPatchFilename, isDirectory: false)
+        let patchFileUrl = patchesFolder.appendingPathComponent(repo.patchFileName, isDirectory: false)
 
         let repoFolder = config.location(for: checkoutable)
         let gitApply = ShellCommand("git", "apply", patchFileUrl.path, currentDirectoryURL: repoFolder, logger: logger)
         try await gitApply.execute()
     }
+
+    private func prepare(_ config: BuildConfig, logger: Logging.Logger) async throws {
+        // I would prefer don't have secret check for other protocol, but looks like simplest solution for now
+        if let underlyingRepo = buildableItem.underlyingRepo {
+            let checkoutable = underlyingRepo.checkoutable
+            logger.info("Step has git repo, so executing git reset to needed revision before build")
+            let object: String = try checkoutable.checkoutObject(using: self.defaultRevisionsMap)
+            let repoFolder = config.location(for: checkoutable)
+            let gitReset = GitReset(repoUrl: repoFolder, object: object, logger: logger)
+            try await gitReset.execute()
+
+            try await applyPatch(to: underlyingRepo, config: config, logger: logger)
+        }
+
+        let repoBuildFolder = config.buildLocation(for: buildableItem)
+        try? fileManager.removeItem(at: repoBuildFolder)
+    }
+
 }
