@@ -37,8 +37,8 @@ enum Repos {
     }()
 
     static let libs: [BuildableItem] = {
-        let stdLibs: [BuildableItem] = AndroidArchs.all.map { arch in
-            return StdLib(
+        let libs: [BuildableItem] = AndroidArchs.all.flatMap { arch -> [BuildableItem] in
+            let stdLib = StdLib(
                 swift: Repos.swift,
                 arch: arch,
                 dependencies: [
@@ -47,8 +47,15 @@ enum Repos {
                     "NDK": NDKDependency(),
                 ]
             )
+
+            let libDispatch = LibDispatchBuild(arch: arch,
+                                               libDispatchRepo: libDispatchRepo,
+                                               swift: swift,
+                                               stdlib: stdLib)
+            return [stdLib, libDispatch]
         }
-        return stdLibs
+
+        return libs
     }()
 
     static let llvm = LlvmProjectRepo()
@@ -217,6 +224,14 @@ struct SPMRepo: BuildableItem, Checkoutable {
     init(dependencies: [String: BuildableItemDependency]) {
         self.dependencies = dependencies
     }
+
+    func cmakeCacheEntries(config: BuildConfig) -> [String] {
+        [
+            "CMAKE_Swift_FLAGS=\"-Xlinker -rpath -Xlinker @executable_path/../lib\"",
+            "USE_CMAKE_INSTALL=TRUE",
+            "CMAKE_BUILD_WITH_INSTALL_RPATH=true",
+        ]
+    }
 }
 
 struct SwiftRepo: BuildableItem, Checkoutable {
@@ -311,7 +326,7 @@ struct StdLib: BuildableItem {
         [
             "ANDROID_ABI=" + arch.ndkABI,
             "ANDROID_PLATFORM=android-" + config.androidApiLevel,
-            "CMAKE_TOOLCHAIN_FILE=" + config.ndkPath + "/build/cmake/android.toolchain.cmake",
+            "CMAKE_TOOLCHAIN_FILE=" + config.cmakeToolchainFile,
 
             // LLVM_DIR come form dependency
 
@@ -359,15 +374,97 @@ struct StdLib: BuildableItem {
 }
 
 
-struct LibDispatchRepo: BuildableItem, BuildableItemDependency, Checkoutable {
+struct LibDispatchRepo: BuildableItemDependency, Checkoutable {
     let githubUrl = "https://github.com/apple/swift-corelibs-libdispatch.git"
 
     func cmakeDepDirCaheEntry(depName: String, config: BuildConfig) -> [String] {
         return [
-            "SWIFT_PATH_TO_LIBDISPATCH_SOURCE=\"\(sourceLocation(using: config).path)\"",
+            "SWIFT_PATH_TO_LIBDISPATCH_SOURCE=\"\(config.location(for: self).path)\"",
+        ]
+    }
+}
+
+struct LibDispatchBuild: BuildableItem {
+
+    init(arch: AndroidArch,
+         libDispatchRepo: LibDispatchRepo,
+         swift: SwiftRepo,
+         stdlib: StdLib) {
+        self.arch = arch
+        self.libDispatchRepo = libDispatchRepo
+        self.swift = swift
+        self.stdlib = stdlib
+    }
+
+    var name: String { "libDispatch-\(arch.name)" }
+
+    var underlyingRepo: BuildableItemRepo? {
+        BuildableItemRepo(checkoutable: libDispatchRepo, patchFileName: "libDispatch")
+    }
+
+    func sourceLocation(using buildConfig: BuildConfig) -> URL {
+        buildConfig.location(for: libDispatchRepo)
+    }
+
+    func cmakeCacheEntries(config: BuildConfig) -> [String] {
+        let cmakeSwiftFlags = [
+            "-resource-dir \(config.buildLocation(for: stdlib).path)/lib/swift",
+            "-Xcc --sysroot=\(config.ndkToolchain)/sysroot",
+
+            // Follow this unwer, otherwise, I got error, that can't find start stop files - https://stackoverflow.com/questions/69795531/after-ndk22-upgrade-the-build-fails-with-cannot-open-crtbegin-so-o-crtend-so
+            // More detailed explanation - https://github.com/NikolayJuly/swift-toolchain-for-android-on-macos/issues/1#issuecomment-1426774354
+            "-Xclang-linker -nostartfiles",
+
+            "-Xclang-linker --sysroot=\(config.ndkToolchain)/sysroot/usr/lib/\(arch.ndkLibArchName)/\(config.androidApiLevel)",
+            "-Xclang-linker --gcc-toolchain=\(config.ndkToolchain)",
+            "-tools-directory \(config.ndkToolchain)/bin",
+
+            //"-Xclang-linker -v",
+            //"-v",
+        ]
+
+        let cFlags: [String] = [
+            //"-v",
+        ]
+
+        let cxxFlags: [String] = [
+            //"-v",
+        ]
+
+        let cmakeSwiftFlagsString = cmakeSwiftFlags.joined(separator: " ")
+        let cFlagsString = cFlags.joined(separator: " ")
+        let cxxFlagsString = cxxFlags.joined(separator: " ")
+
+        return [
+            "ANDROID_ABI=" + arch.ndkABI,
+            "ANDROID_PLATFORM=android-" + config.androidApiLevel,
+            "CMAKE_TOOLCHAIN_FILE=" + config.cmakeToolchainFile,
+
+            "ENABLE_TESTING=NO",
+            "ENABLE_SWIFT=YES",
+
+            "CMAKE_Swift_COMPILER=\(config.buildLocation(for: swift).path)/bin/swiftc",
+            "CMAKE_Swift_COMPILER_FORCED=true",
+
+            "CMAKE_Swift_COMPILER_TARGET=\(arch.swiftTarget)",
+            "CMAKE_Swift_FLAGS=\"\(cmakeSwiftFlagsString)\"",
+
+            "CMAKE_C_FLAGS=\"-v\"",
+            "CMAKE_CXX_FLAGS=\"-v\"",
+
+            "CMAKE_C_FLAGS=\"\(cFlagsString)\"",
+            "CMAKE_CXX_FLAGS=\"\(cxxFlagsString)\"",
+
+            "CMAKE_BUILD_WITH_INSTALL_RPATH=true",
         ]
     }
 
+    // MARK: Private
+
+    private let arch: AndroidArch
+    private let swift: SwiftRepo
+    private let stdlib: StdLib
+    private let libDispatchRepo: LibDispatchRepo
 }
 
 
