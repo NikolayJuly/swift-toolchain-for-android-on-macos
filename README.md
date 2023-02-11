@@ -13,11 +13,15 @@ $ swift run SwiftBuilder \
   --working-folder <WORKING_FOLDER> \
   --cmake-path <PATH_TO_CMAKE_BINARY> \
   --ndk-path <PATH_TO_NDK_V25>
+  --source-root "$PWD"
 ```
 For example, values might be
 WORKING_FOLDER - `~/ws/SwiftAndroid`, this should be empty folder, which will be used by app for checkout and build
 PATH_TO_CMAKE_BINARY - `~/Library/Android/sdk/cmake/3.22.1/bin`
 PATH_TO_NDK_V25 - `~/Library/Android/sdk/ndk/25.1.8937393`
+
+If you want try and build with other NDK version, or android API level, modify `BuildConfig` in `SwiftBuildCommand.swift`.
+To change macOS target, like arch or min deployment target - check same `BuildConfig` 
 
 While building, we will save progress with completed steps in `current-progress.json`. 
 This helps us avoid re-running long build operations, if we encountered any problem

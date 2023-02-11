@@ -9,13 +9,21 @@ struct BuildConfig {
     let workingFolder: URL
     let sourceRoot: URL
 
-    let cmakePath: String
-
-    let ndkPath: String
-
     var logsFolder: URL { workingFolder.appendingPathComponent("logs", isDirectory: true) }
 
     var buildsRootFolder: URL { workingFolder.appendingPathComponent("build", isDirectory: true) }
+
+    // MARK: CMAKE
+
+    let cmakePath: String
+
+    var cmakeToolchainFile: String {
+        ndkPath + "/build/cmake/android.toolchain.cmake"
+    }
+
+    // MARK: NDK
+
+    let ndkPath: String
 
     // TODO: May be we need to make these value configurable
     let androidApiLevel: String = "21"
@@ -24,6 +32,8 @@ struct BuildConfig {
     var ndkToolchain: String {
         ndkPath + "/toolchains/llvm/prebuilt/darwin-x86_64"
     }
+
+    // MARK: macOS
 
     let macOsTarget = "12.0" // deployment target
     let macOsArch = "arm64"
