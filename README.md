@@ -5,7 +5,7 @@ Swift toolchain for android on macos
 ## Prerequisites
 - You are on arm64 mac
 - Recent xcode vetsion installed on mac
-- Install NDK and CMake. (Instructions)[https://developer.android.com/studio/projects/install-ndk]
+- Install NDK and CMake. [Instructions](https://developer.android.com/studio/projects/install-ndk)
 
 ## Execute
 ```
@@ -30,7 +30,7 @@ If you want start from scratch - just delete this file from working folder. Alte
 
 ## How to update code fore new release
 
-1. Find new release tag in (github repo)[https://github.com/apple/swift.git]
+1. Find new release tag in [github repo](https://github.com/apple/swift.git)
 2. Follow steps [here](./Sources/SwiftBuilder/Repos/HowToGetCommitHashes.md) to update default checkout hashes
 3. Consider changing `CMAKE_OSX_DEPLOYMENT_TARGET`
 4. Execute and fix issue by issue...
