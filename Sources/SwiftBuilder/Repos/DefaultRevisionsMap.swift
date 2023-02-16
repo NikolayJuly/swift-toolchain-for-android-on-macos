@@ -4,11 +4,18 @@ import RegexBuilder
 // TODO: Consider outomate retriving of `updateChekcoutOutput`
 struct DefaultRevisionsMap {
     init() {
-        let matches = updateChekcoutOutput.matches(of: revisionLineRegex)
+        let commitMatches = updateChekcoutOutput.matches(of: revisionLineRegex)
+        let tagsMatches = updateChekcoutOutput.matches(of: tagLineRegex)
 
         var parsedMap = [String: CheckoutRevision]()
-        for match in matches {
+        for match in commitMatches {
             parsedMap[match.output.1] = .commit(match.output.2)
+        }
+        for match in tagsMatches {
+            guard match.output.2 != "skip" else {
+                continue
+            }
+            parsedMap[match.output.1] = .tag(match.output.2)
         }
         self.parsedMap = parsedMap
     }
@@ -26,7 +33,7 @@ private let updateChekcoutOutput =
 """
 cmake                              : skip
 cmark                              : 9c8096a23f44794bde297452d87c455fc4f76d42
-icu                                : skip
+icu                                : release-65-1
 indexstore-db                      : 9305648b0a8700434fa2e55eeacf7c7f4402a0d5
 swift-llbuild                      : 564424db5fdb62dcb5d863bdf7212500ef03a87b
 llvm-project                       : 3dade082a9b1989207a7fa7f3975868485d16a49
@@ -70,6 +77,7 @@ private let repoNameRegex = Regex {
         OneOrMore(.word)
     }
 }
+
 private let revisionLineRegex = Regex {
     ZeroOrMore(.whitespace)
     Capture {
@@ -85,3 +93,21 @@ private let revisionLineRegex = Regex {
         String(v)
     }
 }
+
+private let tagLineRegex = Regex {
+    ZeroOrMore(.whitespace)
+    Capture {
+        repoNameRegex
+    } transform: { v -> String in
+        String(v)
+    }
+    OneOrMore(.whitespace)
+    ": "
+    Capture {
+        OneOrMore(tagRegex)
+    } transform: { v -> String in
+        String(v)
+    }
+}
+
+private let tagRegex = #/[a-zA-Z\-0-9\.]+/#
