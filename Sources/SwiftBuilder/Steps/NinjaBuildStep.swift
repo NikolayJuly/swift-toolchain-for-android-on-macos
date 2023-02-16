@@ -13,7 +13,7 @@ final class NinjaBuildStep: BuildStep {
         Self.buildStepName(for: buildableRepo)
     }
 
-    init(buildableRepo: BuildableItem) {
+    init(buildableRepo: NinjaBuildableItem) {
         self.buildableRepo = buildableRepo
     }
 
@@ -46,6 +46,6 @@ final class NinjaBuildStep: BuildStep {
 
     // MARK: Private
 
-    private let buildableRepo: BuildableItem
+    private let buildableRepo: NinjaBuildableItem
     private let terminal = Terminal()
 }

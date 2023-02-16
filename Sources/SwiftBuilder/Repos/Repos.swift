@@ -17,47 +17,6 @@ enum Repos {
         libDispatchRepo,
     ]
 
-    static let buildOrder: [BuildableItem] = {
-        let upToSwift: [BuildableItem] = [
-            llvm,
-            cmark,
-            yams,
-            swiftArgumentParser,
-            swiftSystem,
-            toolsSupportCore,
-            llbuild,
-            swiftDriver,
-            crypto,
-            collections,
-            spm,
-            swift,
-        ]
-
-        return upToSwift + libs
-    }()
-
-    static let libs: [BuildableItem] = {
-        let libs: [BuildableItem] = AndroidArchs.all.flatMap { arch -> [BuildableItem] in
-            let stdLib = StdLib(
-                swift: Repos.swift,
-                arch: arch,
-                dependencies: [
-                    "LLVM": LLVMModule(llvm: Repos.llvm),
-                    "LibDispatch": libDispatchRepo,
-                    "NDK": NDKDependency(),
-                ]
-            )
-
-            let libDispatch = LibDispatchBuild(arch: arch,
-                                               libDispatchRepo: libDispatchRepo,
-                                               swift: swift,
-                                               stdlib: stdLib)
-            return [stdLib, libDispatch]
-        }
-
-        return libs
-    }()
-
     static let llvm = LlvmProjectRepo()
     static let cmark = CMarkRepo()
     static let yams = YamsRepo()
@@ -67,6 +26,7 @@ enum Repos {
     static let crypto = SwiftCryptoRepo()
     static let collections = SwiftCollectionsRepo()
 
+    // FIXME: Everything with dependency separate from repos
     static let toolsSupportCore = SwiftToolsSupportCoreRepo(dependencies: [
         "SwiftSystem": swiftSystem
     ])
@@ -99,7 +59,7 @@ enum Repos {
     static let libDispatchRepo = LibDispatchRepo()
 }
 
-struct LlvmProjectRepo: BuildableItem, Checkoutable {
+struct LlvmProjectRepo: BuildableItem, Checkoutable, NinjaBuildableItem {
     let githubUrl = "https://github.com/apple/llvm-project.git"
 
     let buildSubfolder: String? = "llvm"
@@ -126,7 +86,7 @@ struct LlvmProjectRepo: BuildableItem, Checkoutable {
     }
 }
 
-struct CMarkRepo: BuildableItem, Checkoutable {
+struct CMarkRepo: BuildableItem, Checkoutable, NinjaBuildableItem {
     let githubUrl = "https://github.com/apple/swift-cmark.git"
 
     func cmakeCacheEntries(config: BuildConfig) -> [String] {
@@ -138,11 +98,11 @@ struct CMarkRepo: BuildableItem, Checkoutable {
     }
 }
 
-struct YamsRepo: BuildableItem, BuildableItemDependency, Checkoutable {
+struct YamsRepo: BuildableItem, BuildableItemDependency, Checkoutable, NinjaBuildableItem {
     let githubUrl = "https://github.com/jpsim/yams.git"
 }
 
-struct SwiftArgumentParserRepo: BuildableItem, BuildableItemDependency, Checkoutable {
+struct SwiftArgumentParserRepo: BuildableItem, BuildableItemDependency, Checkoutable, NinjaBuildableItem {
 
     let githubUrl = "https://github.com/apple/swift-argument-parser.git"
 
@@ -155,11 +115,11 @@ struct SwiftArgumentParserRepo: BuildableItem, BuildableItemDependency, Checkout
     }
 }
 
-struct SwiftSystemRepo: BuildableItem, BuildableItemDependency, Checkoutable {
+struct SwiftSystemRepo: BuildableItem, BuildableItemDependency, Checkoutable, NinjaBuildableItem {
     let githubUrl = "https://github.com/apple/swift-system.git"
 }
 
-struct SwiftToolsSupportCoreRepo: BuildableItem, BuildableItemDependency, Checkoutable {
+struct SwiftToolsSupportCoreRepo: BuildableItem, BuildableItemDependency, Checkoutable, NinjaBuildableItem {
     let githubUrl = "https://github.com/apple/swift-tools-support-core.git"
 
     let dependencies: [String: BuildableItemDependency]
@@ -175,7 +135,7 @@ struct SwiftToolsSupportCoreRepo: BuildableItem, BuildableItemDependency, Checko
     }
 }
 
-struct SwiftLLBuildRepo: BuildableItem, BuildableItemDependency, Checkoutable {
+struct SwiftLLBuildRepo: BuildableItem, BuildableItemDependency, Checkoutable, NinjaBuildableItem {
     let githubUrl = "https://github.com/apple/swift-llbuild.git"
 
     func cmakeCacheEntries(config: BuildConfig) -> [String] {
@@ -196,7 +156,7 @@ struct SwiftLLBuildRepo: BuildableItem, BuildableItemDependency, Checkoutable {
     }
 }
 
-struct SwiftDriverRepo: BuildableItem, BuildableItemDependency, Checkoutable {
+struct SwiftDriverRepo: BuildableItem, BuildableItemDependency, Checkoutable, NinjaBuildableItem {
     let githubUrl = "https://github.com/apple/swift-driver.git"
 
     let dependencies: [String: BuildableItemDependency]
@@ -206,15 +166,15 @@ struct SwiftDriverRepo: BuildableItem, BuildableItemDependency, Checkoutable {
     }
 }
 
-struct SwiftCryptoRepo: BuildableItem, BuildableItemDependency, Checkoutable {
+struct SwiftCryptoRepo: BuildableItem, BuildableItemDependency, Checkoutable, NinjaBuildableItem {
     let githubUrl = "https://github.com/apple/swift-crypto.git"
 }
 
-struct SwiftCollectionsRepo: BuildableItem, BuildableItemDependency, Checkoutable {
+struct SwiftCollectionsRepo: BuildableItem, BuildableItemDependency, Checkoutable, NinjaBuildableItem {
     let githubUrl = "https://github.com/apple/swift-collections.git"
 }
 
-struct SPMRepo: BuildableItem, Checkoutable {
+struct SPMRepo: BuildableItem, Checkoutable, NinjaBuildableItem {
     let repoName: String = "swiftpm"
 
     let githubUrl = "https://github.com/apple/swift-package-manager.git"
@@ -234,7 +194,7 @@ struct SPMRepo: BuildableItem, Checkoutable {
     }
 }
 
-struct SwiftRepo: BuildableItem, Checkoutable {
+struct SwiftRepo: BuildableItem, Checkoutable, NinjaBuildableItem {
     let githubUrl = "https://github.com/apple/swift.git"
 
     let revision: CheckoutRevision = .tag("swift-5.7-RELEASE")
@@ -296,84 +256,6 @@ struct SwiftRepo: BuildableItem, Checkoutable {
     }
 }
 
-struct StdLib: BuildableItem {
-
-    init(swift: SwiftRepo,
-         arch: AndroidArch,
-         dependencies: [String: BuildableItemDependency]) {
-        self.swift = swift
-        self.arch = arch
-        self.dependencies = dependencies
-    }
-
-    // MARK: BuildableItem
-
-    var name: String { "stdlib-\(arch.name)" }
-
-    let dependencies: [String: BuildableItemDependency]
-
-    var underlyingRepo: BuildableItemRepo? {
-        BuildableItemRepo(checkoutable: swift,
-                          patchFileName: "stdlib.patch")
-    }
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        let swiftLocation = swift.sourceLocation(using: buildConfig)
-        return swiftLocation
-    }
-
-    func cmakeCacheEntries(config: BuildConfig) -> [String] {
-        [
-            "ANDROID_ABI=" + arch.ndkABI,
-            "ANDROID_PLATFORM=android-" + config.androidApiLevel,
-            "CMAKE_TOOLCHAIN_FILE=" + config.cmakeToolchainFile,
-
-            // LLVM_DIR come form dependency
-
-            "SWIFT_HOST_VARIANT_SDK=ANDROID",
-            "SWIFT_HOST_VARIANT_ARCH=" + arch.swiftArch,
-            "SWIFT_SDKS=\"ANDROID\"",
-            "SWIFT_STANDARD_LIBRARY_SWIFT_FLAGS='-sdk;\(config.ndkToolchain)/sysroot'", // also might add `;-v` for verbose
-
-            "SWIFT_ENABLE_EXPERIMENTAL_CONCURRENCY=TRUE",
-
-            "SWIFT_STDLIB_SINGLE_THREADED_RUNTIME=FALSE",
-
-            // SWIFT_PATH_TO_LIBDISPATCH_SOURCE come from LibDispatch dependency
-
-            "SWIFT_BUILD_DYNAMIC_SDK_OVERLAY=TRUE",
-            "SWIFT_BUILD_STATIC_SDK_OVERLAY=FALSE",
-
-            "SWIFT_BUILD_TEST_SUPPORT_MODULES=FALSE",
-
-            "SWIFT_INCLUDE_TOOLS=NO",
-            "SWIFT_INCLUDE_TESTS=FALSE",
-            "SWIFT_INCLUDE_DOCS=NO",
-
-            "SWIFT_BUILD_SYNTAXPARSERLIB=NO",
-            "SWIFT_BUILD_SOURCEKIT=NO",
-            
-            "SWIFT_ENABLE_LLD_LINKER=FALSE",
-            "SWIFT_ENABLE_GOLD_LINKER=TRUE",
-
-            "SWIFT_ENABLE_DISPATCH=true",
-
-            "SWIFT_BUILD_RUNTIME_WITH_HOST_COMPILER=YES",
-            "SWIFT_NATIVE_SWIFT_TOOLS_PATH=\(config.buildLocation(for: swift).path)/bin",
-
-            // TODO: These pathes form pre-installed libxml2, so might be needed to build it before
-            "LIBXML2_LIBRARY=/opt/homebrew/Cellar/libxml2/2.10.3/lib",
-            "LIBXML2_INCLUDE_DIR=/opt/homebrew/Cellar/libxml2/2.10.3/include",
-        ]
-    }
-
-    // MARK: Private
-
-    private let swift: SwiftRepo
-    private let arch: AndroidArch
-}
-
-
 struct LibDispatchRepo: BuildableItemDependency, Checkoutable {
     let githubUrl = "https://github.com/apple/swift-corelibs-libdispatch.git"
 
@@ -384,129 +266,14 @@ struct LibDispatchRepo: BuildableItemDependency, Checkoutable {
     }
 }
 
-struct LibDispatchBuild: BuildableItem {
 
-    init(arch: AndroidArch,
-         libDispatchRepo: LibDispatchRepo,
-         swift: SwiftRepo,
-         stdlib: StdLib) {
-        self.arch = arch
-        self.libDispatchRepo = libDispatchRepo
-        self.swift = swift
-        self.stdlib = stdlib
-    }
+struct ICURepo: Checkoutable {
+    let githubUrl = "https://github.com/unicode-org/icu.git"
+}
 
-    var name: String { "libDispatch-\(arch.name)" }
-
-    var underlyingRepo: BuildableItemRepo? {
-        BuildableItemRepo(checkoutable: libDispatchRepo, patchFileName: "libDispatch")
-    }
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: libDispatchRepo)
-    }
-
-    func cmakeCacheEntries(config: BuildConfig) -> [String] {
-        let cmakeSwiftFlags = [
-            "-resource-dir \(config.buildLocation(for: stdlib).path)/lib/swift",
-            "-Xcc --sysroot=\(config.ndkToolchain)/sysroot",
-
-            // Follow this unwer, otherwise, I got error, that can't find start stop files - https://stackoverflow.com/questions/69795531/after-ndk22-upgrade-the-build-fails-with-cannot-open-crtbegin-so-o-crtend-so
-            // More detailed explanation - https://github.com/NikolayJuly/swift-toolchain-for-android-on-macos/issues/1#issuecomment-1426774354
-            "-Xclang-linker -nostartfiles",
-
-            "-Xclang-linker --sysroot=\(config.ndkToolchain)/sysroot/usr/lib/\(arch.ndkLibArchName)/\(config.androidApiLevel)",
-            "-Xclang-linker --gcc-toolchain=\(config.ndkToolchain)",
-            "-tools-directory \(config.ndkToolchain)/bin",
-
-            //"-Xclang-linker -v",
-            //"-v",
-        ]
-
-        let cFlags: [String] = [
-            //"-v",
-        ]
-
-        let cxxFlags: [String] = [
-            //"-v",
-        ]
-
-        let cmakeSwiftFlagsString = cmakeSwiftFlags.joined(separator: " ")
-        let cFlagsString = cFlags.joined(separator: " ")
-        let cxxFlagsString = cxxFlags.joined(separator: " ")
-
-        return [
-            "ANDROID_ABI=" + arch.ndkABI,
-            "ANDROID_PLATFORM=android-" + config.androidApiLevel,
-            "CMAKE_TOOLCHAIN_FILE=" + config.cmakeToolchainFile,
-
-            "ENABLE_TESTING=NO",
-            "ENABLE_SWIFT=YES",
-
-            "CMAKE_Swift_COMPILER=\(config.buildLocation(for: swift).path)/bin/swiftc",
-            "CMAKE_Swift_COMPILER_FORCED=true",
-
-            "CMAKE_Swift_COMPILER_TARGET=\(arch.swiftTarget)",
-            "CMAKE_Swift_FLAGS=\"\(cmakeSwiftFlagsString)\"",
-
-            "CMAKE_C_FLAGS=\"-v\"",
-            "CMAKE_CXX_FLAGS=\"-v\"",
-
-            "CMAKE_C_FLAGS=\"\(cFlagsString)\"",
-            "CMAKE_CXX_FLAGS=\"\(cxxFlagsString)\"",
-
-            "CMAKE_BUILD_WITH_INSTALL_RPATH=true",
-        ]
-    }
-
-    // MARK: Private
-
-    private let arch: AndroidArch
-    private let swift: SwiftRepo
-    private let stdlib: StdLib
-    private let libDispatchRepo: LibDispatchRepo
+struct FoundationRepo: Checkoutable {
+    let githubUrl = "https://github.com/apple/swift-corelibs-foundation"
 }
 
 
-private struct LLVMModule: BuildableItemDependency {
-    init(llvm: LlvmProjectRepo) {
-        self.llvm = llvm
-    }
-
-    func cmakeDepDirCaheEntry(depName: String, config: BuildConfig) -> [String] {
-        let depBuildUrl = config.buildLocation(for: llvm)
-        let res = depName + "_DIR=\"\(depBuildUrl.path)/lib/cmake/\(depName.lowercased())\""
-        return [res]
-    }
-
-    private let llvm: LlvmProjectRepo
-}
-
-private struct CmarkAsDependency: BuildableItemDependency {
-    init(cmark: CMarkRepo) {
-        self.cmark = cmark
-    }
-
-    func cmakeDepDirCaheEntry(depName: String, config: BuildConfig) -> [String] {
-        let depRepoUrl = config.location(for: cmark)
-        let depBuildUrl = config.buildLocation(for: cmark)
-        return [
-            "SWIFT_PATH_TO_CMARK_SOURCE=\"\(depRepoUrl.path)\"",
-            "SWIFT_PATH_TO_CMARK_BUILD=\"\(depBuildUrl.path)\""
-        ]
-    }
-
-    private let cmark: CMarkRepo
-}
-
-private struct NDKDependency: BuildableItemDependency {
-    func cmakeDepDirCaheEntry(depName: String, config: BuildConfig) -> [String] {
-        [
-            "SWIFT_ANDROID_NDK_PATH=\"\(config.ndkPath)\"",
-            "SWIFT_ANDROID_NDK_GCC_VERSION=" + config.ndkGccVersion,
-            "SWIFT_ANDROID_API_LEVEL=" + config.androidApiLevel,
-            "SWIFT_ANDROID_NDK_CLANG_VERSION=" + config.ndkClangVersion,
-        ]
-    }
-}
 
