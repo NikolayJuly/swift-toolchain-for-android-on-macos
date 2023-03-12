@@ -9,6 +9,8 @@ protocol BuildableItem {
     // Will be used as folder or file name part, where needed
     var name: String { get }
 
+    var buildSubfolder: String? { get }
+
     var underlyingRepo: BuildableItemRepo? { get }
 
     func sourceLocation(using buildConfig: BuildConfig) -> URL
@@ -27,7 +29,7 @@ extension BuildableItem where Self: Checkoutable {
 
     func sourceLocation(using buildConfig: BuildConfig) -> URL {
         var resUrl = buildConfig.location(for: self)
-        if let buildSubfolder {
+        if let buildSubfolder = self.buildSubfolder {
             resUrl = resUrl.appendingPathComponent(buildSubfolder, isDirectory: true)
         }
         return resUrl
