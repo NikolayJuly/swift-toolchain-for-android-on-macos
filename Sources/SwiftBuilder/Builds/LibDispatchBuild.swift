@@ -27,7 +27,7 @@ struct LibDispatchBuild: NinjaBuildableItem {
             "-resource-dir \(config.buildLocation(for: stdlib).path)/lib/swift",
             "-Xcc --sysroot=\(config.ndkToolchain)/sysroot",
 
-            // Follow this unwer, otherwise, I got error, that can't find start stop files - https://stackoverflow.com/questions/69795531/after-ndk22-upgrade-the-build-fails-with-cannot-open-crtbegin-so-o-crtend-so
+            // I got error, that can't find start stop files - https://stackoverflow.com/questions/69795531/after-ndk22-upgrade-the-build-fails-with-cannot-open-crtbegin-so-o-crtend-so
             // More detailed explanation - https://github.com/NikolayJuly/swift-toolchain-for-android-on-macos/issues/1#issuecomment-1426774354
             "-Xclang-linker -nostartfiles",
 
