@@ -1,7 +1,6 @@
 import Foundation
 
-struct StdLibBuild: BuildableItem {
-
+struct StdLibBuild: NinjaBuildableItem {
     init(swift: SwiftRepo,
          arch: AndroidArch,
          dependencies: [String: BuildableItemDependency]) {

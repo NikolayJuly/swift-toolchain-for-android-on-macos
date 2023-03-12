@@ -13,6 +13,9 @@ extension BuildableItemDependency where Self: BuildableItem {
 }
 
 protocol NinjaBuildableItem: BuildableItem {
+
+    var targets: [String] { get }
+
     var buildSubfolder: String? { get }
 
     var dependencies: [String: BuildableItemDependency] { get }
@@ -21,6 +24,10 @@ protocol NinjaBuildableItem: BuildableItem {
 }
 
 extension NinjaBuildableItem {
+
+    // Most of repos has 1 default target
+    var targets: [String] { [] }
+
     var dependencies: [String: BuildableItemDependency] { [:] }
 
     func cmakeCacheEntries(config: BuildConfig) -> [String] { [] }

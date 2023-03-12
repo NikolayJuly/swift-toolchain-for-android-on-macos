@@ -1,25 +1,24 @@
 import Foundation
 
-struct LibDispatchBuild: NinjaBuildableItem {
-
+struct LibFoundationBuild: NinjaBuildableItem {
     init(arch: AndroidArch,
-         libDispatchRepo: LibDispatchRepo,
+         foundationRepo: FoundationRepo,
+         dispatch: LibDispatchBuild,
          swift: SwiftRepo,
          stdlib: StdLibBuild) {
         self.arch = arch
-        self.libDispatchRepo = libDispatchRepo
+        self.foundationRepo = foundationRepo
+        self.dispatch = dispatch
         self.swift = swift
         self.stdlib = stdlib
     }
 
-    var name: String { "libDispatch-\(arch.name)" }
+    let name: String = "swift-corelibs-foundation"
 
-    var underlyingRepo: BuildableItemRepo? {
-        BuildableItemRepo(checkoutable: libDispatchRepo, patchFileName: "libDispatch")
-    }
+    let underlyingRepo: BuildableItemRepo? = nil
 
     func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: libDispatchRepo)
+        buildConfig.location(for: foundationRepo)
     }
 
     func cmakeCacheEntries(config: BuildConfig) -> [String] {
@@ -51,13 +50,14 @@ struct LibDispatchBuild: NinjaBuildableItem {
         let cFlagsString = cFlags.joined(separator: " ")
         let cxxFlagsString = cxxFlags.joined(separator: " ")
 
+        let dispatchBuild = config.buildLocation(for: dispatch).path
+
         return [
             "ANDROID_ABI=" + arch.ndkABI,
             "ANDROID_PLATFORM=android-" + config.androidApiLevel,
             "CMAKE_TOOLCHAIN_FILE=" + config.cmakeToolchainFile,
 
             "ENABLE_TESTING=NO",
-            "ENABLE_SWIFT=YES",
 
             "CMAKE_Swift_COMPILER=\(config.buildLocation(for: swift).path)/bin/swiftc",
             "CMAKE_Swift_COMPILER_FORCED=true",
@@ -69,13 +69,29 @@ struct LibDispatchBuild: NinjaBuildableItem {
             "CMAKE_CXX_FLAGS=\"\(cxxFlagsString)\"",
 
             "CMAKE_BUILD_WITH_INSTALL_RPATH=true",
+            "CMAKE_HAVE_LIBC_PTHREAD=YES",
+
+            // Dispatch
+            "dispatch_DIR=\(dispatchBuild)/cmake/modules"
+            //
+            //             // XML
+            //             -D LIBXML2_INCLUDE_DIR=${xml.paths.installs}/include/libxml2
+            //             -D LIBXML2_LIBRARY=${xml.paths.installs}/lib/libxml2.so
+            //
+            //             // CURL
+            //             -D CURL_INCLUDE_DIR=${curl.paths.installs}/include
+            //             -D CURL_LIBRARY=${curl.paths.installs}/lib/libcurl.so
+            //
+            //             // ICU
+            //             -D ICU_INCLUDE_DIR=${icu.paths.installs}/include
+            //             -D ICU_I18N_LIBRARY_RELEASE=${icu.paths.installs}/lib/libicui18nswift.so
+            //             -D ICU_UC_LIBRARY_RELEASE=${icu.paths.installs}/lib/libicuucswift.so
         ]
     }
 
-    // MARK: Private
-
     private let arch: AndroidArch
+    private let foundationRepo: FoundationRepo
+    private let dispatch: LibDispatchBuild
     private let swift: SwiftRepo
     private let stdlib: StdLibBuild
-    private let libDispatchRepo: LibDispatchRepo
 }

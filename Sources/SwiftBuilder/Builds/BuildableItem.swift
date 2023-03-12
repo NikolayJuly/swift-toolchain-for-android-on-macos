@@ -9,8 +9,6 @@ protocol BuildableItem {
     // Will be used as folder or file name part, where needed
     var name: String { get }
 
-    var targets: [String] { get }
-
     var underlyingRepo: BuildableItemRepo? { get }
 
     func sourceLocation(using buildConfig: BuildConfig) -> URL
@@ -20,9 +18,6 @@ protocol BuildableItem {
 
 extension BuildableItem {
     var buildSubfolder: String? { nil }
-
-    // Most of repos has 1 default target
-    var targets: [String] { [] }
 
     var patchFileName: String { name }
 }

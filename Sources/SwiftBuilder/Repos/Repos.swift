@@ -15,6 +15,8 @@ enum Repos {
         collections,
         spm,
         libDispatchRepo,
+        foundationRepo,
+        icu,
     ]
 
     static let llvm = LlvmProjectRepo()
@@ -57,6 +59,8 @@ enum Repos {
     ])
 
     static let libDispatchRepo = LibDispatchRepo()
+    static let icu = ICURepo()
+    static let foundationRepo = FoundationRepo()
 }
 
 struct LlvmProjectRepo: BuildableItem, Checkoutable, NinjaBuildableItem {

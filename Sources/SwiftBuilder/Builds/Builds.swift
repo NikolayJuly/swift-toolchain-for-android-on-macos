@@ -20,7 +20,11 @@ enum Builds {
         return upToSwift + icus +  libs
     }()
 
-    static let icus = AndroidArchs.all.map { ICUBuild(arch: $0, repo: Repos.icu) }
+    static let icus: [BuildableItem] = {
+        let hostBuild = ICUHostBuild(repo: Repos.icu)
+        let archBuilds = AndroidArchs.all.map { ICUBuild(arch: $0, repo: Repos.icu, hostBuild: hostBuild) }
+        return [hostBuild] + archBuilds
+    }()
 
     static let libs: [BuildableItem] = {
         let libs: [BuildableItem] = AndroidArchs.all.flatMap { arch -> [BuildableItem] in
