@@ -35,7 +35,7 @@ private final class BuildHostIcuStep: BuildStep {
     var stepName: String { "build-icu-host" }
 
     func execute(_ config: BuildConfig, logger: Logging.Logger) async throws {
-        let progressReporter = StepProgressReporter(step: "Build ICU Host", initialState: .configure)
+        let progressReporter = StepProgressReporter(step: "Configure ICU Host", initialState: .configure)
 
         let buildFolderUrl = config.buildLocation(for: icu)
 

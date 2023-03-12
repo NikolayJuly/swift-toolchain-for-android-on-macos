@@ -43,7 +43,7 @@ private final class BuildIcuStep: BuildStep {
 
     func execute(_ config: BuildConfig, logger: Logging.Logger) async throws {
 
-        let progressReporter = StepProgressReporter(step: "Build ICU \(icu.arch.name)", initialState: .configure)
+        let progressReporter = StepProgressReporter(step: "Configure ICU \(icu.arch.name)", initialState: .configure)
 
         let buildFolderUrl = config.buildLocation(for: icu)
 
