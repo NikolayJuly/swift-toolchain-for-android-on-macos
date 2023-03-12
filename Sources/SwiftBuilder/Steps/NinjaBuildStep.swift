@@ -18,11 +18,7 @@ final class NinjaBuildStep: BuildStep {
     }
 
     func execute(_ config: BuildConfig, logger: Logger) async throws {
-        let timeMesurement = TimeMesurement()
-        terminal.pushEphemeral()
-        let stepNameText = "Build \(buildableRepo.name): ".consoleText(.plain)
-        var status = "Building...".consoleText(ConsoleStyle(color: .blue))
-        terminal.output(stepNameText + status)
+        let progressReporter = StepProgressReporter(step: "Build \(buildableRepo.name)", initialState: .build)
 
         let repoBuildFolder = config.buildLocation(for: buildableRepo)
 
@@ -37,15 +33,10 @@ final class NinjaBuildStep: BuildStep {
                                    logger: logger)
         try await command.execute()
 
-        terminal.popEphemeral()
-        terminal.pushEphemeral()
-
-        status = "Done".consoleText(ConsoleStyle(color: .green)) +  " in \(timeMesurement.durationString).".consoleText(.plain)
-        terminal.output(stepNameText + status)
+        progressReporter.update(state: .done)
     }
 
     // MARK: Private
 
     private let buildableRepo: NinjaBuildableItem
-    private let terminal = Terminal()
 }

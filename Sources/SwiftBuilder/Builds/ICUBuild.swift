@@ -1,4 +1,3 @@
-import ConsoleKit
 import Foundation
 import Logging
 import Shell
@@ -22,7 +21,7 @@ struct ICUBuild: BuildableItem {
     }
 
     func buildSteps() -> [BuildStep] {
-        [BuildIcuStep(icu: self)]
+        [BuildIcuStep(icu: self), MakeStep(buildableItem: self)]
     }
 
     // MARK: Private
@@ -44,13 +43,7 @@ private final class BuildIcuStep: BuildStep {
 
     func execute(_ config: BuildConfig, logger: Logging.Logger) async throws {
 
-        // FIXME: This code with status and mesurement used a lot, I think I need create struct for it
-        let timeMesurement = TimeMesurement()
-        terminal.pushEphemeral()
-        let stepNameText = "Build ICU \(icu.arch.name): ".consoleText(.plain)
-
-        var status = "Configure...".consoleText(ConsoleStyle(color: .blue))
-        terminal.output(stepNameText + status)
+        let progressReporter = StepProgressReporter(step: "Build ICU \(icu.arch.name)", initialState: .configure)
 
         let buildFolderUrl = config.buildLocation(for: icu)
 
@@ -58,25 +51,12 @@ private final class BuildIcuStep: BuildStep {
 
         try await configure(config, logger: logger)
 
-        terminal.popEphemeral()
-        terminal.pushEphemeral()
-
-        status = "Making...".consoleText(ConsoleStyle(color: .blue))
-        terminal.output(stepNameText + status)
-
-        try await make(config, logger: logger)
-
-        terminal.popEphemeral()
-        terminal.pushEphemeral()
-
-        status = "Done".consoleText(ConsoleStyle(color: .green)) +  " in \(timeMesurement.durationString).".consoleText(.plain)
-        terminal.output(stepNameText + status)
+        progressReporter.update(state: .done)
     }
 
     // MARK: Private
 
     private let icu: ICUBuild
-    private let terminal = Terminal()
     private var fileManager: FileManager { FileManager.default }
 
     private func configure(_ config: BuildConfig, logger: Logging.Logger) async throws {
@@ -116,14 +96,6 @@ private final class BuildIcuStep: BuildStep {
         let commandComponents = exports + [configureUrl.path] + arguments
 
         let command = ShellCommand(commandComponents,
-                                   currentDirectoryURL: buildFolderUrl,
-                                   logger: logger)
-        try await command.execute()
-    }
-    
-    private func make(_ config: BuildConfig, logger: Logging.Logger) async throws {
-        let buildFolderUrl = config.buildLocation(for: icu)
-        let command = ShellCommand(["make"],
                                    currentDirectoryURL: buildFolderUrl,
                                    logger: logger)
         try await command.execute()

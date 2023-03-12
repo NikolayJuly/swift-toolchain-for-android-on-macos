@@ -1,4 +1,3 @@
-import ConsoleKit
 import Foundation
 import Logging
 import Shell
@@ -20,21 +19,9 @@ final class ConfigureRepoStep: BuildStep {
     }
 
     func execute(_ config: BuildConfig, logger: Logger) async throws {
-        let timeMesurement = TimeMesurement()
-        terminal.pushEphemeral()
-
-        let stepNameText = "Configure \(buildableItem.name): ".consoleText(.plain)
-
-        var status = "Preparing...".consoleText(ConsoleStyle(color: .blue))
-        terminal.output(stepNameText + status)
+        let progressReporter = StepProgressReporter(step: "Configure \(buildableItem.name)", initialState: .build)
 
         try await prepare(config, logger: logger)
-
-        terminal.popEphemeral()
-        terminal.pushEphemeral()
-
-        status = "Configuring...".consoleText(ConsoleStyle(color: .blue))
-        terminal.output(stepNameText + status)
 
         let repoFolder = buildableItem.sourceLocation(using: config)
 
@@ -58,18 +45,13 @@ final class ConfigureRepoStep: BuildStep {
                                     logger: logger)
         try await config.execute()
 
-        terminal.popEphemeral()
-        terminal.pushEphemeral()
-
-        status = "Done".consoleText(ConsoleStyle(color: .green)) +  " in \(timeMesurement.durationString).".consoleText(.plain)
-        terminal.output(stepNameText + status)
+        progressReporter.update(state: .done)
     }
 
     // MARK: Private
 
     private let buildableItem: NinjaBuildableItem
     private var fileManager: FileManager { FileManager.default }
-    private let terminal = Terminal()
     private let defaultRevisionsMap = DefaultRevisionsMap()
 
     private func applyPatch(to repo: BuildableItemRepo, config: BuildConfig, logger: Logger) async throws {
