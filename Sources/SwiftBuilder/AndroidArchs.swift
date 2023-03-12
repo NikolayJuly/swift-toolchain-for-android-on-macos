@@ -16,11 +16,11 @@ enum AndroidArchs {
                                    swiftTarget: "aarch64-unknown-linux-android")
 
     static let arm7 = AndroidArch(name: "armv7a",
-                                   ndkABI: "armeabi-v7a",
-                                   ndkPlatform: "arch-arm",
-                                   ndkLibArchName: "arm-linux-androideabi",
-                                   swiftArch: "armv7",
-                                   swiftTarget: "armv7-unknown-linux-androideabi")
+                                  ndkABI: "armeabi-v7a",
+                                  ndkPlatform: "arch-arm",
+                                  ndkLibArchName: "arm-linux-androideabi",
+                                  swiftArch: "armv7",
+                                  swiftTarget: "armv7-unknown-linux-androideabi")
 
     static let x86 = AndroidArch(name: "x86",
                                  ndkABI: "x86",
@@ -37,11 +37,15 @@ enum AndroidArchs {
                                     swiftTarget: "x86_64-unknown-linux-android")
 }
 
-struct AndroidArch {
+struct AndroidArch: Equatable {
     let name: String
     let ndkABI: String
     let ndkPlatform: String
     let ndkLibArchName: String
     let swiftArch: String
     let swiftTarget: String
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        return lhs.ndkABI == rhs.ndkABI
+    }
 }
