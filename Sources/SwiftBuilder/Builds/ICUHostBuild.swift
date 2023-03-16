@@ -30,7 +30,7 @@ private final class BuildHostIcuStep: BuildStep {
 
     // MARK: BuildStep
 
-    var stepName: String { "build-icu-host" }
+    var stepName: String { "configure-\(icu.name)" }
 
     func execute(_ config: BuildConfig, logger: Logging.Logger) async throws {
         let progressReporter = StepProgressReporter(step: "Configure ICU Host", initialState: .configure)

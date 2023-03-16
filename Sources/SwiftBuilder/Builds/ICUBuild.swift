@@ -48,7 +48,7 @@ private final class BuildIcuStep: BuildStep {
 
     // MARK: BuildStep
 
-    var stepName: String { "configure-icu-\(icu.arch.name)" }
+    var stepName: String { "configure-\(icu.name)" }
 
     func execute(_ config: BuildConfig, logger: Logging.Logger) async throws {
 

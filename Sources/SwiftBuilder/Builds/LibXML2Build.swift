@@ -41,7 +41,12 @@ private final class BuildLibXml2Step: BuildStep {
 
     // MARK: BuildStep
 
-    var stepName: String { "configure-libXml2-\(libXml2.arch.name)" }
+    var stepName: String { "configure-\(libXml2.name)" }
+
+    func shouldBeExecuted(_ completedSteps: [String]) -> Bool {
+        let makeStepName = "make-\(libXml2.name)"
+        return completedSteps.contains(makeStepName) == false
+    }
 
     func execute(_ config: BuildConfig, logger: Logging.Logger) async throws {
 
@@ -90,7 +95,7 @@ private final class BuildLibXml2Step: BuildStep {
         let exports2: [String] = [
             "CFLAGS=' -Os -fpic -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing \(libXml2.arch.cFlag)'",
             "CXXFLAGS=' -Os -fpic -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing -frtti -fexceptions -std=c++11 -Wno-error=unused-command-line-argument \(libXml2.arch.cFlag)'",
-            "CPPFLAGS=` -Os -fpic -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing  \(libXml2.arch.cFlag)`",
+            "CPPFLAGS=' -Os -fpic -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing  \(libXml2.arch.cFlag)'",
             "CC='\(config.clangPath(for: libXml2.arch))'",
             "CXX='\(config.clangPpPath(for: libXml2.arch))'",
         ]
@@ -105,6 +110,7 @@ private final class BuildLibXml2Step: BuildStep {
             "--without-http",
             " --without-html",
             "--without-ftp",
+            "--without-python",
             "--host=\(libXml2.arch.cHost)",
         ]
 
@@ -127,7 +133,7 @@ private extension AndroidArch {
         case AndroidArchs.arm7:
             return "-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16"
         case AndroidArchs.x86:
-            return "-march=i686 -mtune=intel -mssse3 -mfpmath=sse -m32"
+            return "-march=i686 -mssse3 -mfpmath=sse -m32"
         case AndroidArchs.x86_64:
             return "-march=x86-64"
         default:
