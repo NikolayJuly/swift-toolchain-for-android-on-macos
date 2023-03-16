@@ -10,8 +10,6 @@ struct ICUHostBuild: BuildableItem {
 
     var name: String { "icu-host" }
 
-    var underlyingRepo: BuildableItemRepo?
-
     func sourceLocation(using buildConfig: BuildConfig) -> URL {
         buildConfig.location(for: repo)
     }

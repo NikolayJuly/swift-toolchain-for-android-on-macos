@@ -2,7 +2,19 @@ import Foundation
 import Logging
 import Shell
 
+extension BuildConfig {
+    func clangPath(for arch: AndroidArch) -> String {
+        ndkToolchain + "/bin/\(arch.clangFilenamePrefix)\(androidApiLevel)-clang"
+    }
+
+    func clangPpPath(for arch: AndroidArch) -> String {
+        ndkToolchain + "/bin/\(arch.clangFilenamePrefix)\(androidApiLevel)-clang++"
+    }
+}
+
 struct ICUBuild: BuildableItem {
+
+    let arch: AndroidArch
 
     init(arch: AndroidArch,
          repo: ICURepo,
@@ -14,8 +26,6 @@ struct ICUBuild: BuildableItem {
 
     var name: String { "icu-\(arch.name)" } 
 
-    var underlyingRepo: BuildableItemRepo?
-
     func sourceLocation(using buildConfig: BuildConfig) -> URL {
         buildConfig.location(for: repo)
     }
@@ -26,7 +36,6 @@ struct ICUBuild: BuildableItem {
 
     // MARK: Private
 
-    fileprivate let arch: AndroidArch
     fileprivate let repo: ICURepo
     fileprivate let hostBuild: ICUHostBuild
 }
@@ -39,7 +48,7 @@ private final class BuildIcuStep: BuildStep {
 
     // MARK: BuildStep
 
-    var stepName: String { "build-icu-\(icu.arch.name)" }
+    var stepName: String { "configure-icu-\(icu.arch.name)" }
 
     func execute(_ config: BuildConfig, logger: Logging.Logger) async throws {
 
@@ -71,8 +80,8 @@ private final class BuildIcuStep: BuildStep {
         ]
 
         let configureUrl = config.location(for: icu.repo).appendingPathComponent("icu4c", isDirectory: true)
-            .appendingPathComponent("source", isDirectory: true)
-            .appendingPathComponent("configure", isDirectory: true)
+                                                         .appendingPathComponent("source", isDirectory: true)
+                                                         .appendingPathComponent("configure", isDirectory: true)
 
         let arguments: [String] = [
             "--prefix=/",
@@ -131,15 +140,5 @@ private extension AndroidArch {
         default:
             fatalError("Unsupported arch \(name)")
         }
-    }
-}
-
-private extension BuildConfig {
-    func clangPath(for arch: AndroidArch) -> String {
-        ndkToolchain + "/bin/\(arch.clangFilenamePrefix)\(androidApiLevel)-clang"
-    }
-
-    func clangPpPath(for arch: AndroidArch) -> String {
-        ndkToolchain + "/bin/\(arch.clangFilenamePrefix)\(androidApiLevel)-clang++"
     }
 }

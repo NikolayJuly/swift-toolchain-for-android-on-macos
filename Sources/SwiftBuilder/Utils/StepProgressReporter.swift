@@ -7,6 +7,7 @@ final class StepProgressReporter {
         case configure
         case build
         case make
+        case install
         case done
     }
 
@@ -41,6 +42,8 @@ final class StepProgressReporter {
             status = "Building...".consoleText(ConsoleStyle(color: .blue))
         case .make:
             status = "Making...".consoleText(ConsoleStyle(color: .blue))
+        case .install:
+            status = "Installing...".consoleText(ConsoleStyle(color: .blue))
         case .done:
             status = "Done".consoleText(ConsoleStyle(color: .green)) +  " in \(timeMesurement.durationString).".consoleText(.plain)
         }

@@ -4,7 +4,7 @@ struct LibDispatchBuild: NinjaBuildableItem {
 
     init(arch: AndroidArch,
          libDispatchRepo: LibDispatchRepo,
-         swift: SwiftRepo,
+         swift: SwiftBuild,
          stdlib: StdLibBuild) {
         self.arch = arch
         self.libDispatchRepo = libDispatchRepo
@@ -75,7 +75,7 @@ struct LibDispatchBuild: NinjaBuildableItem {
     // MARK: Private
 
     private let arch: AndroidArch
-    private let swift: SwiftRepo
+    private let swift: SwiftBuild
     private let stdlib: StdLibBuild
     private let libDispatchRepo: LibDispatchRepo
 }

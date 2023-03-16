@@ -22,6 +22,8 @@ extension BuildableItem {
     var buildSubfolder: String? { nil }
 
     var patchFileName: String { name }
+
+    var underlyingRepo: BuildableItemRepo? { nil }
 }
 
 extension BuildableItem where Self: Checkoutable {
@@ -44,5 +46,11 @@ extension BuildableItem where Self: Checkoutable {
 extension BuildConfig {
     func buildLocation(for repo: BuildableItem) -> URL {
         return buildsRootFolder.appendingPathComponent(repo.name, isDirectory: true)
+    }
+}
+
+extension BuildConfig {
+    func installLocation(for repo: BuildableItem) -> URL {
+        return installRootFolder.appendingPathComponent(repo.name, isDirectory: true)
     }
 }

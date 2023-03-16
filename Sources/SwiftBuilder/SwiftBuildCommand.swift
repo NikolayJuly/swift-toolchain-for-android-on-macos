@@ -13,6 +13,8 @@ struct BuildConfig {
 
     var buildsRootFolder: URL { workingFolder.appendingPathComponent("build", isDirectory: true) }
 
+    var installRootFolder: URL { workingFolder.appendingPathComponent("install", isDirectory: true) }
+
     // MARK: CMAKE
 
     let cmakePath: String
@@ -97,6 +99,8 @@ final class SwiftBuildCommand: AsyncParsableCommand {
                                       ndkPath: ndkPath)
 
         try fileManager.createFolderIfNotExists(at: buildConfig.logsFolder)
+        try fileManager.createFolderIfNotExists(at: buildConfig.buildsRootFolder)
+        try fileManager.createFolderIfNotExists(at: buildConfig.installRootFolder)
 
         for i in 0..<steps.count {
             let step = steps[i]

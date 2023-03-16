@@ -3,51 +3,94 @@ import Foundation
 enum Builds {
     static let buildOrder: [BuildableItem] = {
         let upToSwift: [BuildableItem] = [
-            Repos.llvm,
+            Builds.llvm,
             Repos.cmark,
             Repos.yams,
             Repos.swiftArgumentParser,
             Repos.swiftSystem,
-            Repos.toolsSupportCore,
-            Repos.llbuild,
+            Builds.toolsSupportCore,
+            Builds.llbuild,
             Repos.swiftDriver,
             Repos.crypto,
             Repos.collections,
-            Repos.spm,
-            Repos.swift,
+            Builds.spm,
+            Builds.swift,
         ]
 
         return upToSwift + icus +  libs
     }()
 
+    static let llvm = LlvmProjectBuild(repo: Repos.llvm)
+
+    static let toolsSupportCore = SwiftToolsSupportCoreBuild(
+        dependencies: [
+            "SwiftSystem": Repos.swiftSystem
+        ],
+        tscRepo: Repos.toolsSupportCore
+    )
+
+    static let llbuild = SwiftLLBuildBuild(repo: Repos.llbuild)
+
+    static let spm = SPMBuild(
+        repo: Repos.spm,
+        dependencies: [
+            "TSC": Builds.toolsSupportCore,
+            "LLBuild": Builds.llbuild,
+            "ArgumentParser": Repos.swiftArgumentParser,
+            "SwiftSystem": Repos.swiftSystem,
+            "SwiftDriver": Repos.swiftDriver,
+            "SwiftCrypto": Repos.crypto,
+            "SwiftCollections": Repos.collections,
+        ]
+    )
+
+    static let swift = SwiftBuild(
+        repo: Repos.swift,
+        dependencies: [
+            "LLVM": LLVMModule(llvm: Builds.llvm),
+            "Clang": LLVMModule(llvm: Builds.llvm),
+            "Cmark": CmarkAsDependency(cmark: Repos.cmark),
+            "NDK": NDKDependency(),
+        ]
+    )
+
     static let icus: [BuildableItem] = {
-        let hostBuild = ICUHostBuild(repo: Repos.icu)
-        let archBuilds = AndroidArchs.all.map { ICUBuild(arch: $0, repo: Repos.icu, hostBuild: hostBuild) }
-        return [hostBuild] + archBuilds
+        return [hostIcu] + androidIcus
+    }()
+
+    static let hostIcu = ICUHostBuild(repo: Repos.icu)
+
+    static let androidIcus: [ICUBuild] = {
+        AndroidArchs.all.map { ICUBuild(arch: $0, repo: Repos.icu, hostBuild: hostIcu) }
     }()
 
     static let libs: [BuildableItem] = {
         let libs: [BuildableItem] = AndroidArchs.all.flatMap { arch -> [BuildableItem] in
             let stdLib = StdLibBuild(
-                swift: Repos.swift,
+                swift: Builds.swift,
                 arch: arch,
                 dependencies: [
-                    "LLVM": LLVMModule(llvm: Repos.llvm),
+                    "LLVM": LLVMModule(llvm: Builds.llvm),
                     "LibDispatch": Repos.libDispatchRepo,
                     "NDK": NDKDependency(),
                 ]
             )
 
+            let icu = androidIcus.first { $0.arch == arch }!
+
+            let libXml = LibXml2Build(repo: Repos.libXML2, arch: arch)
+
             let libDispatch = LibDispatchBuild(arch: arch,
                                                libDispatchRepo: Repos.libDispatchRepo,
-                                               swift: Repos.swift,
+                                               swift: Builds.swift,
                                                stdlib: stdLib)
             let libFoundation = LibFoundationBuild(arch: arch,
                                                    foundationRepo: Repos.foundationRepo,
                                                    dispatch: libDispatch,
-                                                   swift: Repos.swift,
-                                                   stdlib: stdLib)
-            return [stdLib, libDispatch, libFoundation]
+                                                   swift: Builds.swift,
+                                                   stdlib: stdLib,
+                                                   icu: icu)
+            return [stdLib, libDispatch, libXml, libFoundation]
         }
 
         return libs
@@ -56,7 +99,7 @@ enum Builds {
 }
 
 struct LLVMModule: BuildableItemDependency {
-    init(llvm: LlvmProjectRepo) {
+    init(llvm: LlvmProjectBuild) {
         self.llvm = llvm
     }
 
@@ -66,7 +109,7 @@ struct LLVMModule: BuildableItemDependency {
         return [res]
     }
 
-    private let llvm: LlvmProjectRepo
+    private let llvm: LlvmProjectBuild
 }
 
 struct CmarkAsDependency: BuildableItemDependency {

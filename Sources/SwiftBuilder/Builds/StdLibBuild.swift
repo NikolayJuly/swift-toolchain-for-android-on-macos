@@ -1,7 +1,7 @@
 import Foundation
 
 struct StdLibBuild: NinjaBuildableItem {
-    init(swift: SwiftRepo,
+    init(swift: SwiftBuild,
          arch: AndroidArch,
          dependencies: [String: BuildableItemDependency]) {
         self.swift = swift
@@ -16,7 +16,7 @@ struct StdLibBuild: NinjaBuildableItem {
     let dependencies: [String: BuildableItemDependency]
 
     var underlyingRepo: BuildableItemRepo? {
-        BuildableItemRepo(checkoutable: swift,
+        BuildableItemRepo(checkoutable: swift.repo,
                           patchFileName: "stdlib.patch")
     }
 
@@ -71,6 +71,6 @@ struct StdLibBuild: NinjaBuildableItem {
 
     // MARK: Private
 
-    private let swift: SwiftRepo
+    private let swift: SwiftBuild
     private let arch: AndroidArch
 }
