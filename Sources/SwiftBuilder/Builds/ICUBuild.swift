@@ -2,16 +2,6 @@ import Foundation
 import Logging
 import Shell
 
-extension BuildConfig {
-    func clangPath(for arch: AndroidArch) -> String {
-        ndkToolchain + "/bin/\(arch.clangFilenamePrefix)\(androidApiLevel)-clang"
-    }
-
-    func clangPpPath(for arch: AndroidArch) -> String {
-        ndkToolchain + "/bin/\(arch.clangFilenamePrefix)\(androidApiLevel)-clang++"
-    }
-}
-
 struct ICUBuild: BuildableItem {
 
     let arch: AndroidArch
@@ -31,7 +21,11 @@ struct ICUBuild: BuildableItem {
     }
 
     func buildSteps() -> [BuildStep] {
-        [BuildIcuStep(icu: self), MakeStep(buildableItem: self)]
+        [
+            BuildIcuStep(icu: self),
+            MakeStep(buildableItem: self),
+            MakeInstallStep(buildableItem: self)
+        ]
     }
 
     // MARK: Private
@@ -122,21 +116,6 @@ private extension AndroidArch {
             return "-march=i686 -mssse3 -mfpmath=sse -m32"
         case AndroidArchs.x86_64:
             return "-march=x86-64"
-        default:
-            fatalError("Unsupported arch \(name)")
-        }
-    }
-
-    var clangFilenamePrefix: String {
-        switch self {
-        case AndroidArchs.arm64:
-            return "aarch64-linux-android"
-        case AndroidArchs.arm7:
-            return "armv7a-linux-androideabi"
-        case AndroidArchs.x86:
-            return "i686-linux-android"
-        case AndroidArchs.x86_64:
-            return "x86_64-linux-android"
         default:
             fatalError("Unsupported arch \(name)")
         }

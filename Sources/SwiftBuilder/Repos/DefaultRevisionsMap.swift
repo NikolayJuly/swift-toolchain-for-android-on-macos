@@ -33,10 +33,8 @@ private let updateChekcoutOutput =
 """
 cmake                              : skip
 cmark                              : 9c8096a23f44794bde297452d87c455fc4f76d42
-curl                               : curl-7_88_1
 icu                                : release-65-1
 indexstore-db                      : 9305648b0a8700434fa2e55eeacf7c7f4402a0d5
-libxml2                            : v2.10.3
 llvm-project                       : 3dade082a9b1989207a7fa7f3975868485d16a49
 ninja                              : 448ae1ccacd17025457ace965d78a45a113c70c6
 sourcekit-lsp                      : 849de8fbb8248623701ef614da015408ef114f1c

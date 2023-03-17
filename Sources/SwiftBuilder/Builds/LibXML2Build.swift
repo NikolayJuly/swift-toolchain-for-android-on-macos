@@ -52,10 +52,6 @@ private final class BuildLibXml2Step: BuildStep {
 
         let progressReporter = StepProgressReporter(step: "Configure LibXml2 \(libXml2.arch.name)", initialState: .configure)
 
-        let buildFolderUrl = config.buildLocation(for: libXml2)
-
-        try fileManager.createFolderIfNotExists(at: buildFolderUrl)
-
         try await configure(config, logger: logger)
 
         progressReporter.update(state: .done)
@@ -70,11 +66,7 @@ private final class BuildLibXml2Step: BuildStep {
 
         let sourceLocation = libXml2.sourceLocation(using: config)
 
-        let exports1: [String] = [
-            "CC='\(config.clangPath(for: libXml2.arch))'",
-            "CXX='\(config.clangPpPath(for: libXml2.arch))'",
-            "CHOST=\(libXml2.arch.cHost)",
-        ]
+        let exports1: [String] = AutoconfSettings.compilerAndHostExports(config: config, arch: libXml2.arch)
 
         let autogenArguments: [String] = [
             "--host=\(libXml2.arch.cHost)",
@@ -82,6 +74,9 @@ private final class BuildLibXml2Step: BuildStep {
 
         let buildFolderUrl = config.buildLocation(for: libXml2)
         let installFolderUrl = config.installLocation(for: libXml2)
+
+        try fileManager.createFolderIfNotExists(at: buildFolderUrl)
+        try fileManager.createFolderIfNotExists(at: installFolderUrl)
 
         let autogenUrl = sourceLocation.appendingPathComponent("autogen.sh", isDirectory: false)
 
@@ -92,14 +87,9 @@ private final class BuildLibXml2Step: BuildStep {
                                           logger: logger)
         try await autogenCommand.execute()
 
-        let exports2: [String] = [
-            "CFLAGS=' -Os -fpic -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing \(libXml2.arch.cFlag)'",
-            "CXXFLAGS=' -Os -fpic -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing -frtti -fexceptions -std=c++11 -Wno-error=unused-command-line-argument \(libXml2.arch.cFlag)'",
-            "CPPFLAGS=' -Os -fpic -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing  \(libXml2.arch.cFlag)'",
-            "CC='\(config.clangPath(for: libXml2.arch))'",
-            "CXX='\(config.clangPpPath(for: libXml2.arch))'",
-        ]
+        let exports2: [String] = AutoconfSettings.clangFlags(arch: libXml2.arch)
 
+        // Actual list of arguments can be found in `swift-corelibs-foundation/build-android`
         let configureArguments: [String] = [
             "--with-sysroot=\(config.ndkToolchain)/sysroot",
             "--with-zlib=\(config.ndkToolchain)/sysroot/usr",
@@ -114,8 +104,6 @@ private final class BuildLibXml2Step: BuildStep {
             "--host=\(libXml2.arch.cHost)",
         ]
 
-
-
         let configureUrl = sourceLocation.appendingPathComponent("configure", isDirectory: false)
 
         let configureScript = ShellCommand(exports1 + exports2 + [configureUrl.path] + configureArguments,
@@ -125,40 +113,8 @@ private final class BuildLibXml2Step: BuildStep {
     }
 }
 
-private extension AndroidArch {
-    var cFlag: String {
-        switch self {
-        case AndroidArchs.arm64:
-            return ""
-        case AndroidArchs.arm7:
-            return "-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16"
-        case AndroidArchs.x86:
-            return "-march=i686 -mssse3 -mfpmath=sse -m32"
-        case AndroidArchs.x86_64:
-            return "-march=x86-64"
-        default:
-            fatalError("Unsupported arch \(name)")
-        }
-    }
-
-    var cHost: String {
-        switch self {
-        case AndroidArchs.arm64:
-            return "aarch64-linux-android"
-        case AndroidArchs.arm7:
-            return "arm-linux-androideabi"
-        case AndroidArchs.x86:
-            return "i686-linux-android"
-        case AndroidArchs.x86_64:
-            return "x86_64-linux-android"
-        default:
-            fatalError("Unsupported arch \(name)")
-        }
-    }
-}
-
-final class InstallLibXmlStep: BuildStep {
-    var stepName: String { "Install-\(libXml2.name)" }
+private final class InstallLibXmlStep: BuildStep {
+    var stepName: String { "install-\(libXml2.name)" }
 
     init(libXml2: LibXml2Build) {
         self.libXml2 = libXml2
@@ -166,7 +122,7 @@ final class InstallLibXmlStep: BuildStep {
 
     func execute(_ config: BuildConfig, logger: Logger) async throws {
 
-        let progressReporter = StepProgressReporter(step: "Install \(libXml2.name)", initialState: .make)
+        let progressReporter = StepProgressReporter(step: "Install \(libXml2.name)", initialState: .install)
 
         let buildFolderUrl = config.buildLocation(for: libXml2)
         let installLib = ShellCommand(["make install-libLTLIBRARIES"],

@@ -18,6 +18,7 @@ enum Repos {
         foundationRepo,
         icu,
         libXML2,
+        openSSL,
         curl,
     ]
 
@@ -46,6 +47,7 @@ enum Repos {
     static let libDispatchRepo = LibDispatchRepo()
     static let icu = ICURepo()
     static let libXML2 = LibXml2Repo()
+    static let openSSL = OpenSSLRepo()
     static let curl = CurlRepo()
     static let foundationRepo = FoundationRepo()
 }
@@ -141,10 +143,20 @@ struct ICURepo: Checkoutable {
 
 struct LibXml2Repo: Checkoutable {
     let githubUrl = "https://github.com/GNOME/libxml2"
+
+    let revision: CheckoutRevision = .tag("v2.10.3")
 }
 
 struct CurlRepo: Checkoutable {
     let githubUrl = "https://github.com/curl/curl"
+
+    let revision: CheckoutRevision = .tag("curl-7_88_1")
+}
+
+struct OpenSSLRepo: Checkoutable {
+    let githubUrl = "https://github.com/openssl/openssl"
+
+    let revision: CheckoutRevision = .tag("openssl-3.1.0")
 }
 
 struct FoundationRepo: Checkoutable {
