@@ -85,11 +85,19 @@ final class SwiftBuildCommand: AsyncParsableCommand {
     }
 
     func run() async throws {
+        let terminal = Terminal()
+
+        let timeMesurement = TimeMesurement()
+
+        defer {
+            let status = "Build ocmpleted in \(timeMesurement.durationString)".consoleText(.plain)
+            terminal.output(status)
+        }
 
         try validation()
 
         var buildProgress = try BuildProgress(withProgressIn: workingFolder)
-        let terminal = Terminal()
+
 
         terminal.output("\n\nStart building process\n")
 
