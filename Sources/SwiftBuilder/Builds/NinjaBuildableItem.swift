@@ -16,8 +16,6 @@ protocol NinjaBuildableItem: BuildableItem {
 
     var targets: [String] { get }
 
-    var buildSubfolder: String? { get }
-
     var dependencies: [String: BuildableItemDependency] { get }
 
     func cmakeCacheEntries(config: BuildConfig) -> [String]

@@ -1,25 +1,16 @@
 import Foundation
 
-struct SwiftBuild: BuildableItem, NinjaBuildableItem {
+struct SwiftBuild: BuildRepoItem, NinjaBuildableItem {
 
-    let repo: SwiftRepo
+    var repo: Checkoutable { Repos.swift }
 
-    init(repo: SwiftRepo,
-         dependencies: [String: BuildableItemDependency]) {
-        self.repo = repo
+    init(dependencies: [String: BuildableItemDependency]) {
         self.dependencies = dependencies
     }
 
     // MARK: NinjaBuildableItem
 
     let dependencies: [String: BuildableItemDependency]
-
-    var name: String { repo.repoName }
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: repo)
-    }
-
 
     func cmakeCacheEntries(config: BuildConfig) -> [String] {
         [

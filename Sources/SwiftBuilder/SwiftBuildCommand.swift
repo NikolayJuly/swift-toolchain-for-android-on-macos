@@ -122,6 +122,8 @@ final class SwiftBuildCommand: AsyncParsableCommand {
                 fileLogger.handler(label: label)
             }
 
+            stepLogger.info("Executing step \(type(of: step))")
+
             try await step.execute(buildConfig, logger: stepLogger)
 
             if buildProgress.completedSteps.contains(step.stepName) == false {

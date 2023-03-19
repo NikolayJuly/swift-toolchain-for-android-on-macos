@@ -2,21 +2,17 @@ import Foundation
 import Logging
 import Shell
 
-struct LibXml2Build: BuildableItem {
+struct LibXml2Build: BuildItemForAndroidArch {
 
-    init(repo: LibXml2Repo,
-         arch: AndroidArch) {
-        self.repo = repo
+    var repo: Checkoutable { Repos.libXML2 }
+
+    let arch: AndroidArch
+
+    init(arch: AndroidArch) {
         self.arch = arch
     }
 
-    // Mark: BuildableItem
-
-    var name: String { repo.repoName + "-" + arch.name }
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: repo)
-    }
+    // MARK: BuildableItem
 
     func buildSteps() -> [BuildStep] {
         [
@@ -25,12 +21,6 @@ struct LibXml2Build: BuildableItem {
             InstallLibXmlStep(libXml2: self)
         ]
     }
-
-
-    // MARK: Private
-
-    fileprivate let repo: LibXml2Repo
-    fileprivate let arch: AndroidArch
 }
 
 private final class BuildLibXml2Step: BuildStep {

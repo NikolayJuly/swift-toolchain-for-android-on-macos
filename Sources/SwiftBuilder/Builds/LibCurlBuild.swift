@@ -2,26 +2,22 @@ import Foundation
 import Logging
 import Shell
 
-struct LibCurlBuild: BuildableItem {
-    init(repo: CurlRepo,
-         arch: AndroidArch,
-         openSSL: LibOpenSSLBuild) {
-        self.repo = repo
+struct LibCurlBuild: BuildItemForAndroidArch {
+
+    let arch: AndroidArch
+    var repo: Checkoutable { Repos.curl }
+
+    init(arch: AndroidArch,
+         openSSL: BuildableItem) {
         self.arch = arch
         self.openSSL = openSSL
     }
 
-    // BuildableItem
-
-    var name: String { repo.repoName + "-" + arch.name }
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: repo)
-    }
+    // MARK: BuildableItem
 
     func buildSteps() -> [BuildStep] {
         [
-            BuildLibCurlStep(curl: self, openSSL: openSSL),
+            BuildLibCurlStep(curl: self),
             MakeStep(buildableItem: self),
             MakeInstallStep(buildableItem: self)
         ]
@@ -29,17 +25,13 @@ struct LibCurlBuild: BuildableItem {
 
     // MARK: Private
 
-    fileprivate let repo: CurlRepo
-    fileprivate let openSSL: LibOpenSSLBuild
-    fileprivate let arch: AndroidArch
+    fileprivate var openSSL: BuildableItem
 }
 
 private final class BuildLibCurlStep: BuildStep {
 
-    init(curl: LibCurlBuild,
-         openSSL: LibOpenSSLBuild) {
+    init(curl: LibCurlBuild) {
         self.curl = curl
-        self.openSSL = openSSL
     }
 
     // MARK: BuildStep
@@ -63,7 +55,7 @@ private final class BuildLibCurlStep: BuildStep {
     // MARK: Private
 
     private let curl: LibCurlBuild
-    private let openSSL: LibOpenSSLBuild
+    private var openSSL: BuildableItem { curl.openSSL }
     private var fileManager: FileManager { FileManager.default }
 
     private func configure(_ config: BuildConfig, logger: Logging.Logger) async throws {

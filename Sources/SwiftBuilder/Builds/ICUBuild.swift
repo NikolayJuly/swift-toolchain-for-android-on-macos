@@ -2,22 +2,14 @@ import Foundation
 import Logging
 import Shell
 
-struct ICUBuild: BuildableItem {
+struct ICUBuild: BuildItemForAndroidArch {
 
     let arch: AndroidArch
 
-    init(arch: AndroidArch,
-         repo: ICURepo,
-         hostBuild: ICUHostBuild) {
+    var repo: Checkoutable { Repos.icu }
+
+    init(arch: AndroidArch) {
         self.arch = arch
-        self.repo = repo
-        self.hostBuild = hostBuild
-    }
-
-    var name: String { "icu-\(arch.name)" } 
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: repo)
     }
 
     func buildSteps() -> [BuildStep] {
@@ -30,8 +22,7 @@ struct ICUBuild: BuildableItem {
 
     // MARK: Private
 
-    fileprivate let repo: ICURepo
-    fileprivate let hostBuild: ICUHostBuild
+    fileprivate var hostBuild: ICUHostBuild { Builds.hostIcu }
 }
 
 private final class BuildIcuStep: BuildStep {

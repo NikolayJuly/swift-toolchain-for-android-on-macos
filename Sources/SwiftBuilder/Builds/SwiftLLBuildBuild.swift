@@ -1,17 +1,10 @@
 import Foundation
 
-struct SwiftLLBuildBuild: BuildableItemDependency, NinjaBuildableItem {
-    init(repo: SwiftLLBuildRepo) {
-        self.repo = repo
-    }
+struct SwiftLLBuildBuild: BuildableItemDependency, BuildRepoItem, NinjaBuildableItem {
+
+    var repo: Checkoutable { Repos.llbuild }
 
     // MARK: NinjaBuildableItem
-
-    var name: String { repo.repoName }
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: repo)
-    }
 
     func cmakeCacheEntries(config: BuildConfig) -> [String] {
         // Here we have targer arch and macos version, and I might probably replace arm64 here with macOs arch, but 10.10 make no sense to replace with 12, as few placeses parse and looks like expect 10.x
@@ -29,8 +22,4 @@ struct SwiftLLBuildBuild: BuildableItemDependency, NinjaBuildableItem {
             "BUILD_SHARED_LIBS=false",
         ]
     }
-
-    // MARK: Private
-
-    private let repo: SwiftLLBuildRepo
 }

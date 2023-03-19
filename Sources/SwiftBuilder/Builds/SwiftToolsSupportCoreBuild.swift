@@ -1,21 +1,12 @@
 import Foundation
 
-struct SwiftToolsSupportCoreBuild: BuildableItemDependency, NinjaBuildableItem {
-    var name: String { tscRepo.repoName }
+struct SwiftToolsSupportCoreBuild: BuildableItemDependency, BuildRepoItem, NinjaBuildableItem {
 
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: tscRepo)
-    }
+    var repo: Checkoutable { Repos.toolsSupportCore }
 
     let dependencies: [String: BuildableItemDependency]
 
-    init(dependencies: [String: BuildableItemDependency],
-         tscRepo: SwiftToolsSupportCoreRepo) {
+    init(dependencies: [String: BuildableItemDependency]) {
         self.dependencies = dependencies
-        self.tscRepo = tscRepo
     }
-
-    // MARK: Private
-
-    private let tscRepo: SwiftToolsSupportCoreRepo
 }

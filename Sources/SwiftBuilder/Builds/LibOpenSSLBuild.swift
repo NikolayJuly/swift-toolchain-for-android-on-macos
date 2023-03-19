@@ -2,21 +2,17 @@ import Foundation
 import Logging
 import Shell
 
-struct LibOpenSSLBuild: BuildableItem {
+struct LibOpenSSLBuild: BuildItemForAndroidArch {
 
-    init(repo: OpenSSLRepo,
-         arch: AndroidArch) {
-        self.repo = repo
+    var repo: Checkoutable { Repos.openSSL }
+
+    let arch: AndroidArch
+
+    init(arch: AndroidArch) {
         self.arch = arch
     }
 
-    // Mark: BuildableItem
-
-    var name: String { repo.repoName + "-" + arch.name }
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: repo)
-    }
+    // MARK: BuildableItem
 
     func buildSteps() -> [BuildStep] {
         [
@@ -25,12 +21,6 @@ struct LibOpenSSLBuild: BuildableItem {
             MakeInstallStep(buildableItem: self, makeArgs: ["SHLIB_VERSION_NUMBER=", "SHLIB_EXT=.so", "install_sw", "install_ssldirs"]),
         ]
     }
-
-
-    // MARK: Private
-
-    fileprivate let repo: OpenSSLRepo
-    fileprivate let arch: AndroidArch
 }
 private final class BuildLibOpenSSLStep: BuildStep {
 

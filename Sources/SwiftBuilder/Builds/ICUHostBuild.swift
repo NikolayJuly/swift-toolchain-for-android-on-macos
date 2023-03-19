@@ -2,25 +2,15 @@ import Foundation
 import Logging
 import Shell
 
-struct ICUHostBuild: BuildableItem {
+struct ICUHostBuild: BuildRepoItem {
 
-    init(repo: ICURepo) {
-        self.repo = repo
-    }
+    var repo: Checkoutable { Repos.icu }
 
     var name: String { "icu-host" }
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: repo)
-    }
 
     func buildSteps() -> [BuildStep] {
         [BuildHostIcuStep(icu: self), MakeStep(buildableItem: self)]
     }
-
-    // MARK: Private
-
-    fileprivate let repo: ICURepo
 }
 
 private final class BuildHostIcuStep: BuildStep {

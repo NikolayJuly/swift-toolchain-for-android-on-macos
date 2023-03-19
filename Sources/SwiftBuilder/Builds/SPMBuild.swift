@@ -1,20 +1,14 @@
 import Foundation
 
-struct SPMBuild: NinjaBuildableItem {
+struct SPMBuild: BuildRepoItem, NinjaBuildableItem {
 
-    init(repo: SPMRepo,
-         dependencies: [String: BuildableItemDependency]) {
-        self.repo = repo
+    var repo: Checkoutable { Repos.spm }
+
+    init(dependencies: [String: BuildableItemDependency]) {
         self.dependencies = dependencies
     }
 
     // MARK: NinjaBuildableItem
-
-    var name: String { repo.repoName }
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: repo)
-    }
 
     let dependencies: [String: BuildableItemDependency]
 
@@ -25,8 +19,4 @@ struct SPMBuild: NinjaBuildableItem {
             "CMAKE_BUILD_WITH_INSTALL_RPATH=true",
         ]
     }
-
-    // MARK: Private
-
-    private let repo: SPMRepo
 }

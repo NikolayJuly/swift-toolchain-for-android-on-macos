@@ -1,29 +1,23 @@
 import Foundation
 
-struct LibFoundationBuild: NinjaBuildableItem {
+struct LibFoundationBuild: BuildItemForAndroidArch, NinjaBuildableItem {
+
+    let arch: AndroidArch
+
+    var repo: Checkoutable { Repos.foundationRepo }
+
     init(arch: AndroidArch,
-         foundationRepo: FoundationRepo,
-         dispatch: LibDispatchBuild,
-         swift: SwiftBuild,
-         stdlib: StdLibBuild,
-         icu: ICUBuild,
-         curl: LibCurlBuild,
-         libXml2: LibXml2Build) {
+         dispatch: BuildableItem,
+         stdlib: BuildableItem,
+         icu: BuildableItem,
+         curl: BuildableItem,
+         libXml2: BuildableItem) {
         self.arch = arch
-        self.foundationRepo = foundationRepo
         self.dispatch = dispatch
-        self.swift = swift
         self.stdlib = stdlib
         self.icu = icu
         self.curl = curl
         self.libXml2 = libXml2
-    }
-
-    // TODO: I use this approach a lot. I need couple protocols with default implementation. Build on top of repo and build with arch on top of repo
-    var name: String { foundationRepo.repoName + "-" + arch.name }
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: foundationRepo)
     }
 
     func cmakeCacheEntries(config: BuildConfig) -> [String] {
@@ -99,12 +93,10 @@ struct LibFoundationBuild: NinjaBuildableItem {
         ]
     }
 
-    private let arch: AndroidArch
-    private let foundationRepo: FoundationRepo
-    private let dispatch: LibDispatchBuild
-    private let swift: SwiftBuild
-    private let stdlib: StdLibBuild
-    private let icu: ICUBuild
-    private let curl: LibCurlBuild
-    private let libXml2: LibXml2Build
+    private let dispatch: BuildableItem
+    private var swift: BuildableItem { Builds.swift }
+    private let stdlib: BuildableItem
+    private let icu: BuildableItem
+    private let curl: BuildableItem
+    private let libXml2: BuildableItem
 }

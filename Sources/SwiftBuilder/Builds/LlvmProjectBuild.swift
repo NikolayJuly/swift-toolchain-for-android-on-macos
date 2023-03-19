@@ -1,20 +1,19 @@
 import Foundation
 
-struct LlvmProjectBuild: NinjaBuildableItem {
-    init(repo: LlvmProjectRepo) {
-        self.repo = repo
-    }
+struct LlvmProjectBuild: BuildRepoItem, NinjaBuildableItem {
+
+    // MARK: BuildRepoItem
+
+    var repo: Checkoutable { Repos.llvm }
 
     // MARK: BuildableItem
-    var name: String { repo.repoName }
 
     func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: repo)
+        let repoUrl = buildConfig.location(for: repo)
+        return repoUrl.appendingPathComponent("llvm", isDirectory: true)
     }
 
     // MARK: NinjaBuildableItem
-
-    let buildSubfolder: String? = "llvm"
 
     let targets: [String] = [
         "clang",
@@ -36,6 +35,4 @@ struct LlvmProjectBuild: NinjaBuildableItem {
             "LLVM_ENABLE_PROJECTS=clang",
         ]
     }
-
-    private let repo: LlvmProjectRepo
 }

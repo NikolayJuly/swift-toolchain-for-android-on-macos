@@ -10,8 +10,6 @@ protocol BuildableItem {
     // Will be used as folder or file name part, where needed
     var name: String { get }
 
-    var buildSubfolder: String? { get }
-
     // TODO: Rename struct and property to show actual purpose - apply patches
     var underlyingRepo: BuildableItemRepo? { get }
 
@@ -20,11 +18,15 @@ protocol BuildableItem {
     func buildSteps() -> [BuildStep]
 }
 
+protocol BuildRepoItem: BuildableItem {
+    var repo: Checkoutable { get }
+}
+
+protocol BuildItemForAndroidArch: BuildRepoItem {
+    var arch: AndroidArch { get }
+}
+
 extension BuildableItem {
-    var buildSubfolder: String? { nil }
-
-    var patchFileName: String { name }
-
     var underlyingRepo: BuildableItemRepo? { nil }
 }
 
@@ -32,11 +34,7 @@ extension BuildableItem where Self: Checkoutable {
     var name: String { repoName }
 
     func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        var resUrl = buildConfig.location(for: self)
-        if let buildSubfolder = self.buildSubfolder {
-            resUrl = resUrl.appendingPathComponent(buildSubfolder, isDirectory: true)
-        }
-        return resUrl
+        buildConfig.location(for: self)
     }
 
     // TODO: Rename struct and property to show actual purpose - apply patches
@@ -44,6 +42,24 @@ extension BuildableItem where Self: Checkoutable {
         BuildableItemRepo(checkoutable: self,
                           patchFileName: repoName + ".patch")
     }
+}
+
+extension BuildableItem where Self: BuildRepoItem {
+    var name: String { repo.repoName }
+
+    func sourceLocation(using buildConfig: BuildConfig) -> URL {
+        buildConfig.location(for: repo)
+    }
+
+    // TODO: Rename struct and property to show actual purpose - apply patches
+    var underlyingRepo: BuildableItemRepo? {
+        BuildableItemRepo(checkoutable: repo,
+                          patchFileName: repo.repoName + ".patch")
+    }
+}
+
+extension BuildableItem where Self: BuildItemForAndroidArch {
+    var name: String { repo.repoName + "-" + arch.name }
 }
 
 extension BuildConfig {
