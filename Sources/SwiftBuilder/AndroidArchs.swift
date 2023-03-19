@@ -37,7 +37,7 @@ enum AndroidArchs {
                                     swiftTarget: "x86_64-unknown-linux-android")
 }
 
-struct AndroidArch: Equatable {
+struct AndroidArch: Hashable {
     let name: String
     let ndkABI: String
     let ndkPlatform: String

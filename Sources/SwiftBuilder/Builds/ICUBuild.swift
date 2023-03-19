@@ -2,33 +2,27 @@ import Foundation
 import Logging
 import Shell
 
-struct ICUBuild: BuildableItem {
+struct ICUBuild: BuildItemForAndroidArch {
 
-    init(arch: AndroidArch,
-         repo: ICURepo,
-         hostBuild: ICUHostBuild) {
+    let arch: AndroidArch
+
+    var repo: Checkoutable { Repos.icu }
+
+    init(arch: AndroidArch) {
         self.arch = arch
-        self.repo = repo
-        self.hostBuild = hostBuild
-    }
-
-    var name: String { "icu-\(arch.name)" } 
-
-    var underlyingRepo: BuildableItemRepo?
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: repo)
     }
 
     func buildSteps() -> [BuildStep] {
-        [BuildIcuStep(icu: self), MakeStep(buildableItem: self)]
+        [
+            BuildIcuStep(icu: self),
+            MakeStep(buildableItem: self),
+            MakeInstallStep(buildableItem: self)
+        ]
     }
 
     // MARK: Private
 
-    fileprivate let arch: AndroidArch
-    fileprivate let repo: ICURepo
-    fileprivate let hostBuild: ICUHostBuild
+    fileprivate var hostBuild: ICUHostBuild { Builds.hostIcu }
 }
 
 private final class BuildIcuStep: BuildStep {
@@ -39,15 +33,11 @@ private final class BuildIcuStep: BuildStep {
 
     // MARK: BuildStep
 
-    var stepName: String { "build-icu-\(icu.arch.name)" }
+    var stepName: String { "configure-\(icu.name)" }
 
     func execute(_ config: BuildConfig, logger: Logging.Logger) async throws {
 
         let progressReporter = StepProgressReporter(step: "Configure ICU \(icu.arch.name)", initialState: .configure)
-
-        let buildFolderUrl = config.buildLocation(for: icu)
-
-        try fileManager.createFolderIfNotExists(at: buildFolderUrl)
 
         try await configure(config, logger: logger)
 
@@ -60,8 +50,12 @@ private final class BuildIcuStep: BuildStep {
     private var fileManager: FileManager { FileManager.default }
 
     private func configure(_ config: BuildConfig, logger: Logging.Logger) async throws {
-        let buildFolderUrl = config.buildLocation(for: icu)
         let hostBuildFolderUrl = config.buildLocation(for: icu.hostBuild)
+
+        let buildFolderUrl = config.buildLocation(for: icu)
+        let installFolderUrl = config.installLocation(for: icu)
+        try fileManager.createFolderIfNotExists(at: buildFolderUrl)
+        try fileManager.createFolderIfNotExists(at: installFolderUrl)
 
         let exports: [String] = [
             "CFLAGS='-Os \(icu.arch.cFlag)'",
@@ -71,11 +65,11 @@ private final class BuildIcuStep: BuildStep {
         ]
 
         let configureUrl = config.location(for: icu.repo).appendingPathComponent("icu4c", isDirectory: true)
-            .appendingPathComponent("source", isDirectory: true)
-            .appendingPathComponent("configure", isDirectory: true)
+                                                         .appendingPathComponent("source", isDirectory: true)
+                                                         .appendingPathComponent("configure", isDirectory: true)
 
         let arguments: [String] = [
-            "--prefix=/",
+            "--prefix=\(installFolderUrl.path)",
             "--host=\(icu.arch.ndkLibArchName)",
             "--with-library-suffix=swift",
             "--enable-static=no",
@@ -91,7 +85,6 @@ private final class BuildIcuStep: BuildStep {
             "--with-cross-build=\(hostBuildFolderUrl.path)",
             "--with-data-packaging=library",
         ]
-
 
         let commandComponents = exports + [configureUrl.path] + arguments
 
@@ -116,30 +109,5 @@ private extension AndroidArch {
         default:
             fatalError("Unsupported arch \(name)")
         }
-    }
-
-    var clangFilenamePrefix: String {
-        switch self {
-        case AndroidArchs.arm64:
-            return "aarch64-linux-android"
-        case AndroidArchs.arm7:
-            return "armv7a-linux-androideabi"
-        case AndroidArchs.x86:
-            return "i686-linux-android"
-        case AndroidArchs.x86_64:
-            return "x86_64-linux-android"
-        default:
-            fatalError("Unsupported arch \(name)")
-        }
-    }
-}
-
-private extension BuildConfig {
-    func clangPath(for arch: AndroidArch) -> String {
-        ndkToolchain + "/bin/\(arch.clangFilenamePrefix)\(androidApiLevel)-clang"
-    }
-
-    func clangPpPath(for arch: AndroidArch) -> String {
-        ndkToolchain + "/bin/\(arch.clangFilenamePrefix)\(androidApiLevel)-clang++"
     }
 }

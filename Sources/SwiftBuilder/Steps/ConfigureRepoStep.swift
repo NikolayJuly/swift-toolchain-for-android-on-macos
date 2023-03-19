@@ -19,13 +19,12 @@ final class ConfigureRepoStep: BuildStep {
     }
 
     func execute(_ config: BuildConfig, logger: Logger) async throws {
-        let progressReporter = StepProgressReporter(step: "Configure \(buildableItem.name)", initialState: .build)
+        let progressReporter = StepProgressReporter(step: "Configure \(buildableItem.name)", initialState: .configure)
 
         try await prepare(config, logger: logger)
 
-        let repoFolder = buildableItem.sourceLocation(using: config)
+        let sourceLocation = buildableItem.sourceLocation(using: config)
 
-        try fileManager.createFolderIfNotExists(at: config.buildsRootFolder)
         let repoBuildFolder = config.buildLocation(for: buildableItem)
         try fileManager.createEmptyFolder(at: repoBuildFolder)
 
@@ -37,7 +36,7 @@ final class ConfigureRepoStep: BuildStep {
             return dep.cmakeDepDirCaheEntry(depName: depName, config: config)
         }
 
-        let config = CMakeConfigure(folderUrl: repoFolder,
+        let config = CMakeConfigure(folderUrl: sourceLocation,
                                     cmakePath: config.cmakePath,
                                     buildFolder: repoBuildFolder,
                                     cacheEntries: cmakeCacheEntries + depCacheEntries,

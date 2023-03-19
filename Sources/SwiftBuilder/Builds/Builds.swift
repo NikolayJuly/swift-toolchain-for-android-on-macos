@@ -3,51 +3,87 @@ import Foundation
 enum Builds {
     static let buildOrder: [BuildableItem] = {
         let upToSwift: [BuildableItem] = [
-            Repos.llvm,
+            Builds.llvm,
             Repos.cmark,
             Repos.yams,
             Repos.swiftArgumentParser,
             Repos.swiftSystem,
-            Repos.toolsSupportCore,
-            Repos.llbuild,
+            Builds.toolsSupportCore,
+            Builds.llbuild,
             Repos.swiftDriver,
             Repos.crypto,
             Repos.collections,
-            Repos.spm,
-            Repos.swift,
+            Builds.spm,
+            Builds.swift,
         ]
 
         return upToSwift + icus +  libs
     }()
 
+    static let llvm = LlvmProjectBuild()
+
+    static let toolsSupportCore = SwiftToolsSupportCoreBuild(dependencies: [
+        "SwiftSystem": Repos.swiftSystem
+    ])
+
+    static let llbuild = SwiftLLBuildBuild()
+    
+    static let spm = SPMBuild(dependencies: [
+        "TSC": Builds.toolsSupportCore,
+        "LLBuild": Builds.llbuild,
+        "ArgumentParser": Repos.swiftArgumentParser,
+        "SwiftSystem": Repos.swiftSystem,
+        "SwiftDriver": Repos.swiftDriver,
+        "SwiftCrypto": Repos.crypto,
+        "SwiftCollections": Repos.collections,
+    ])
+    
+    static let swift = SwiftBuild(dependencies: [
+        "LLVM": LLVMModule(),
+        "Clang": LLVMModule(),
+        "Cmark": CmarkAsDependency(),
+        "NDK": NDKDependency(),
+    ])
+
     static let icus: [BuildableItem] = {
-        let hostBuild = ICUHostBuild(repo: Repos.icu)
-        let archBuilds = AndroidArchs.all.map { ICUBuild(arch: $0, repo: Repos.icu, hostBuild: hostBuild) }
-        return [hostBuild] + archBuilds
+        return [hostIcu] + androidIcus
+    }()
+
+    static let hostIcu = ICUHostBuild()
+
+    static let androidIcus: [ICUBuild] = {
+        AndroidArchs.all.map { ICUBuild(arch: $0) }
     }()
 
     static let libs: [BuildableItem] = {
         let libs: [BuildableItem] = AndroidArchs.all.flatMap { arch -> [BuildableItem] in
             let stdLib = StdLibBuild(
-                swift: Repos.swift,
                 arch: arch,
                 dependencies: [
-                    "LLVM": LLVMModule(llvm: Repos.llvm),
+                    "LLVM": LLVMModule(),
                     "LibDispatch": Repos.libDispatchRepo,
                     "NDK": NDKDependency(),
                 ]
             )
 
+            let icu = androidIcus.first { $0.arch == arch }!
+
+            let libXml = LibXml2Build(arch: arch)
+
+            let openSSL = LibOpenSSLBuild(arch: arch)
+
+            let curl = LibCurlBuild(arch: arch, openSSL: openSSL)
+
             let libDispatch = LibDispatchBuild(arch: arch,
-                                               libDispatchRepo: Repos.libDispatchRepo,
-                                               swift: Repos.swift,
                                                stdlib: stdLib)
+
             let libFoundation = LibFoundationBuild(arch: arch,
-                                                   foundationRepo: Repos.foundationRepo,
                                                    dispatch: libDispatch,
-                                                   swift: Repos.swift,
-                                                   stdlib: stdLib)
-            return [stdLib, libDispatch, libFoundation]
+                                                   stdlib: stdLib,
+                                                   icu: icu,
+                                                   curl: curl,
+                                                   libXml2: libXml)
+            return [stdLib, libDispatch, libXml, openSSL, curl, libFoundation]
         }
 
         return libs
@@ -56,24 +92,16 @@ enum Builds {
 }
 
 struct LLVMModule: BuildableItemDependency {
-    init(llvm: LlvmProjectRepo) {
-        self.llvm = llvm
-    }
-
     func cmakeDepDirCaheEntry(depName: String, config: BuildConfig) -> [String] {
         let depBuildUrl = config.buildLocation(for: llvm)
         let res = depName + "_DIR=\"\(depBuildUrl.path)/lib/cmake/\(depName.lowercased())\""
         return [res]
     }
 
-    private let llvm: LlvmProjectRepo
+    private var llvm: BuildableItem { Builds.llvm }
 }
 
 struct CmarkAsDependency: BuildableItemDependency {
-    init(cmark: CMarkRepo) {
-        self.cmark = cmark
-    }
-
     func cmakeDepDirCaheEntry(depName: String, config: BuildConfig) -> [String] {
         let depRepoUrl = config.location(for: cmark)
         let depBuildUrl = config.buildLocation(for: cmark)
@@ -83,7 +111,7 @@ struct CmarkAsDependency: BuildableItemDependency {
         ]
     }
 
-    private let cmark: CMarkRepo
+    private var cmark: Checkoutable & BuildableItem { Repos.cmark }
 }
 
 struct NDKDependency: BuildableItemDependency {

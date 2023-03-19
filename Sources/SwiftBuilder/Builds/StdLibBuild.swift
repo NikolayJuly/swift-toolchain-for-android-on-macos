@@ -1,27 +1,24 @@
 import Foundation
 
-struct StdLibBuild: NinjaBuildableItem {
-    init(swift: SwiftRepo,
-         arch: AndroidArch,
+struct StdLibBuild: BuildItemForAndroidArch, NinjaBuildableItem {
+
+    var repo: Checkoutable { Repos.swift }
+
+    let arch: AndroidArch
+
+    init(arch: AndroidArch,
          dependencies: [String: BuildableItemDependency]) {
-        self.swift = swift
         self.arch = arch
         self.dependencies = dependencies
     }
 
     // MARK: BuildableItem
 
-    var name: String { "stdlib-\(arch.name)" }
-
     let dependencies: [String: BuildableItemDependency]
 
     var underlyingRepo: BuildableItemRepo? {
-        BuildableItemRepo(checkoutable: swift,
+        BuildableItemRepo(checkoutable: swift.repo,
                           patchFileName: "stdlib.patch")
-    }
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        return swift.sourceLocation(using: buildConfig)
     }
 
     func cmakeCacheEntries(config: BuildConfig) -> [String] {
@@ -71,6 +68,5 @@ struct StdLibBuild: NinjaBuildableItem {
 
     // MARK: Private
 
-    private let swift: SwiftRepo
-    private let arch: AndroidArch
+    private var swift: BuildRepoItem { Builds.swift }
 }

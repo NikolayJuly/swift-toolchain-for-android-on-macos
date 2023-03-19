@@ -35,7 +35,6 @@ cmake                              : skip
 cmark                              : 9c8096a23f44794bde297452d87c455fc4f76d42
 icu                                : release-65-1
 indexstore-db                      : 9305648b0a8700434fa2e55eeacf7c7f4402a0d5
-swift-llbuild                      : 564424db5fdb62dcb5d863bdf7212500ef03a87b
 llvm-project                       : 3dade082a9b1989207a7fa7f3975868485d16a49
 ninja                              : 448ae1ccacd17025457ace965d78a45a113c70c6
 sourcekit-lsp                      : 849de8fbb8248623701ef614da015408ef114f1c
@@ -56,6 +55,7 @@ swift-experimental-string-processing: 6340818cbfc85b8469c22fa8735c8337c137a7fa
 swift-format                       : bd89f0d9da6256d1d23524ef0f9b5197751af013
 swift-installer-scripts            : 7e916a0f3eb9d5a71a65b8b2af0d1871ca6b2eb2
 swift-integration-tests            : 3156cf37ab7c307cc92bb76f2a5e8236cef7d060
+swift-llbuild                      : 564424db5fdb62dcb5d863bdf7212500ef03a87b
 swift-lmdb                         : 6ea45a7ebf6d8f72bd299dfcc3299e284bbb92ee
 swift-markdown                     : d6cd065a7e4b6c3fad615dcd39890e095a2f63a2
 swift-nio                          : 1d425b0851ffa2695d488cce1d68df2539f42500
@@ -110,4 +110,4 @@ private let tagLineRegex = Regex {
     }
 }
 
-private let tagRegex = #/[a-zA-Z\-0-9\.]+/#
+private let tagRegex = #/[a-zA-Z\-0-9\._]+/#

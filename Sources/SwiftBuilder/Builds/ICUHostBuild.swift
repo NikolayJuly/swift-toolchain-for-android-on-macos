@@ -2,27 +2,15 @@ import Foundation
 import Logging
 import Shell
 
-struct ICUHostBuild: BuildableItem {
+struct ICUHostBuild: BuildRepoItem {
 
-    init(repo: ICURepo) {
-        self.repo = repo
-    }
+    var repo: Checkoutable { Repos.icu }
 
     var name: String { "icu-host" }
-
-    var underlyingRepo: BuildableItemRepo?
-
-    func sourceLocation(using buildConfig: BuildConfig) -> URL {
-        buildConfig.location(for: repo)
-    }
 
     func buildSteps() -> [BuildStep] {
         [BuildHostIcuStep(icu: self), MakeStep(buildableItem: self)]
     }
-
-    // MARK: Private
-
-    fileprivate let repo: ICURepo
 }
 
 private final class BuildHostIcuStep: BuildStep {
@@ -32,7 +20,7 @@ private final class BuildHostIcuStep: BuildStep {
 
     // MARK: BuildStep
 
-    var stepName: String { "build-icu-host" }
+    var stepName: String { "configure-\(icu.name)" }
 
     func execute(_ config: BuildConfig, logger: Logging.Logger) async throws {
         let progressReporter = StepProgressReporter(step: "Configure ICU Host", initialState: .configure)

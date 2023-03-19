@@ -13,6 +13,8 @@ struct BuildConfig {
 
     var buildsRootFolder: URL { workingFolder.appendingPathComponent("build", isDirectory: true) }
 
+    var installRootFolder: URL { workingFolder.appendingPathComponent("install", isDirectory: true) }
+
     // MARK: CMAKE
 
     let cmakePath: String
@@ -83,11 +85,19 @@ final class SwiftBuildCommand: AsyncParsableCommand {
     }
 
     func run() async throws {
+        let terminal = Terminal()
+
+        let timeMesurement = TimeMesurement()
+
+        defer {
+            let status = "Build ocmpleted in \(timeMesurement.durationString)".consoleText(.plain)
+            terminal.output(status)
+        }
 
         try validation()
 
         var buildProgress = try BuildProgress(withProgressIn: workingFolder)
-        let terminal = Terminal()
+
 
         terminal.output("\n\nStart building process\n")
 
@@ -97,6 +107,8 @@ final class SwiftBuildCommand: AsyncParsableCommand {
                                       ndkPath: ndkPath)
 
         try fileManager.createFolderIfNotExists(at: buildConfig.logsFolder)
+        try fileManager.createFolderIfNotExists(at: buildConfig.buildsRootFolder)
+        try fileManager.createFolderIfNotExists(at: buildConfig.installRootFolder)
 
         for i in 0..<steps.count {
             let step = steps[i]
@@ -117,6 +129,8 @@ final class SwiftBuildCommand: AsyncParsableCommand {
             let stepLogger = Logger(label: step.stepName) { label in
                 fileLogger.handler(label: label)
             }
+
+            stepLogger.info("Executing step \(type(of: step))")
 
             try await step.execute(buildConfig, logger: stepLogger)
 
