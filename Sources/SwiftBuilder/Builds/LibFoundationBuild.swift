@@ -4,18 +4,23 @@ struct LibFoundationBuild: NinjaBuildableItem {
     init(arch: AndroidArch,
          foundationRepo: FoundationRepo,
          dispatch: LibDispatchBuild,
-         swift: SwiftRepo,
-         stdlib: StdLibBuild) {
+         swift: SwiftBuild,
+         stdlib: StdLibBuild,
+         icu: ICUBuild,
+         curl: LibCurlBuild,
+         libXml2: LibXml2Build) {
         self.arch = arch
         self.foundationRepo = foundationRepo
         self.dispatch = dispatch
         self.swift = swift
         self.stdlib = stdlib
+        self.icu = icu
+        self.curl = curl
+        self.libXml2 = libXml2
     }
 
-    let name: String = "swift-corelibs-foundation"
-
-    let underlyingRepo: BuildableItemRepo? = nil
+    // TODO: I use this approach a lot. I need couple protocols with default implementation. Build on top of repo and build with arch on top of repo
+    var name: String { foundationRepo.repoName + "-" + arch.name }
 
     func sourceLocation(using buildConfig: BuildConfig) -> URL {
         buildConfig.location(for: foundationRepo)
@@ -52,6 +57,10 @@ struct LibFoundationBuild: NinjaBuildableItem {
 
         let dispatchBuild = config.buildLocation(for: dispatch).path
 
+        let icuInstallPath = config.installLocation(for: icu).path
+        let curlInstallPath = config.installLocation(for: curl).path
+        let libXmlInstallPath = config.installLocation(for: libXml2).path
+
         return [
             "ANDROID_ABI=" + arch.ndkABI,
             "ANDROID_PLATFORM=android-" + config.androidApiLevel,
@@ -72,26 +81,30 @@ struct LibFoundationBuild: NinjaBuildableItem {
             "CMAKE_HAVE_LIBC_PTHREAD=YES",
 
             // Dispatch
-            "dispatch_DIR=\(dispatchBuild)/cmake/modules"
-            //
-            //             // XML
-            //             -D LIBXML2_INCLUDE_DIR=${xml.paths.installs}/include/libxml2
-            //             -D LIBXML2_LIBRARY=${xml.paths.installs}/lib/libxml2.so
-            //
-            //             // CURL
-            //             -D CURL_INCLUDE_DIR=${curl.paths.installs}/include
-            //             -D CURL_LIBRARY=${curl.paths.installs}/lib/libcurl.so
-            //
-            //             // ICU
-            //             -D ICU_INCLUDE_DIR=${icu.paths.installs}/include
-            //             -D ICU_I18N_LIBRARY_RELEASE=${icu.paths.installs}/lib/libicui18nswift.so
-            //             -D ICU_UC_LIBRARY_RELEASE=${icu.paths.installs}/lib/libicuucswift.so
+            "dispatch_DIR=\(dispatchBuild)/cmake/modules",
+
+            // ICU
+            "ICU_LIBRARY=\(icuInstallPath)/lib",
+            "ICU_INCLUDE_DIR=\(icuInstallPath)/include",
+            "ICU_I18N_LIBRARY_RELEASE=\(icuInstallPath)/lib/libicui18nswift.so",
+            "ICU_UC_LIBRARY_RELEASE=\(icuInstallPath)/lib/libicuucswift.so",
+
+            // XML
+            "LIBXML2_INCLUDE_DIR=\(libXmlInstallPath)/include/libxml2",
+            "LIBXML2_LIBRARY=\(libXmlInstallPath)/lib/libxml2.so",
+
+            // CURL
+            "CURL_INCLUDE_DIR=\(curlInstallPath)/include",
+            "CURL_LIBRARY=\(curlInstallPath)/lib/libcurl.so",
         ]
     }
 
     private let arch: AndroidArch
     private let foundationRepo: FoundationRepo
     private let dispatch: LibDispatchBuild
-    private let swift: SwiftRepo
+    private let swift: SwiftBuild
     private let stdlib: StdLibBuild
+    private let icu: ICUBuild
+    private let curl: LibCurlBuild
+    private let libXml2: LibXml2Build
 }

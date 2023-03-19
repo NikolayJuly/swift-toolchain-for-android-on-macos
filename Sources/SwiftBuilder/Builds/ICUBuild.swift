@@ -48,10 +48,6 @@ private final class BuildIcuStep: BuildStep {
 
         let progressReporter = StepProgressReporter(step: "Configure ICU \(icu.arch.name)", initialState: .configure)
 
-        let buildFolderUrl = config.buildLocation(for: icu)
-
-        try fileManager.createFolderIfNotExists(at: buildFolderUrl)
-
         try await configure(config, logger: logger)
 
         progressReporter.update(state: .done)
@@ -63,8 +59,12 @@ private final class BuildIcuStep: BuildStep {
     private var fileManager: FileManager { FileManager.default }
 
     private func configure(_ config: BuildConfig, logger: Logging.Logger) async throws {
-        let buildFolderUrl = config.buildLocation(for: icu)
         let hostBuildFolderUrl = config.buildLocation(for: icu.hostBuild)
+
+        let buildFolderUrl = config.buildLocation(for: icu)
+        let installFolderUrl = config.installLocation(for: icu)
+        try fileManager.createFolderIfNotExists(at: buildFolderUrl)
+        try fileManager.createFolderIfNotExists(at: installFolderUrl)
 
         let exports: [String] = [
             "CFLAGS='-Os \(icu.arch.cFlag)'",
@@ -78,7 +78,7 @@ private final class BuildIcuStep: BuildStep {
                                                          .appendingPathComponent("configure", isDirectory: true)
 
         let arguments: [String] = [
-            "--prefix=/",
+            "--prefix=\(installFolderUrl.path)",
             "--host=\(icu.arch.ndkLibArchName)",
             "--with-library-suffix=swift",
             "--enable-static=no",
@@ -94,7 +94,6 @@ private final class BuildIcuStep: BuildStep {
             "--with-cross-build=\(hostBuildFolderUrl.path)",
             "--with-data-packaging=library",
         ]
-
 
         let commandComponents = exports + [configureUrl.path] + arguments
 

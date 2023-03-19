@@ -80,6 +80,10 @@ enum Builds {
 
             let libXml = LibXml2Build(repo: Repos.libXML2, arch: arch)
 
+            let openSSL = LibOpenSSLBuild(repo: Repos.openSSL, arch: arch)
+
+            let curl = LibCurlBuild(repo: Repos.curl, arch: arch, openSSL: openSSL)
+
             let libDispatch = LibDispatchBuild(arch: arch,
                                                libDispatchRepo: Repos.libDispatchRepo,
                                                swift: Builds.swift,
@@ -89,8 +93,10 @@ enum Builds {
                                                    dispatch: libDispatch,
                                                    swift: Builds.swift,
                                                    stdlib: stdLib,
-                                                   icu: icu)
-            return [stdLib, libDispatch, libXml, libFoundation]
+                                                   icu: icu,
+                                                   curl: curl,
+                                                   libXml2: libXml)
+            return [stdLib, libDispatch, libXml, openSSL, curl, libFoundation]
         }
 
         return libs

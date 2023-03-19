@@ -1,5 +1,6 @@
 import Foundation
 
+// TODO: Rename struct and property to show actual purpose - apply patches
 struct BuildableItemRepo {
     let checkoutable: Checkoutable
     let patchFileName: String
@@ -11,6 +12,7 @@ protocol BuildableItem {
 
     var buildSubfolder: String? { get }
 
+    // TODO: Rename struct and property to show actual purpose - apply patches
     var underlyingRepo: BuildableItemRepo? { get }
 
     func sourceLocation(using buildConfig: BuildConfig) -> URL
@@ -37,6 +39,7 @@ extension BuildableItem where Self: Checkoutable {
         return resUrl
     }
 
+    // TODO: Rename struct and property to show actual purpose - apply patches
     var underlyingRepo: BuildableItemRepo? {
         BuildableItemRepo(checkoutable: self,
                           patchFileName: repoName + ".patch")

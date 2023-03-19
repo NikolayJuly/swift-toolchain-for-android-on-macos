@@ -66,17 +66,18 @@ private final class BuildLibXml2Step: BuildStep {
 
         let sourceLocation = libXml2.sourceLocation(using: config)
 
+        let buildFolderUrl = config.buildLocation(for: libXml2)
+        let installFolderUrl = config.installLocation(for: libXml2)
+
+        try fileManager.createFolderIfNotExists(at: buildFolderUrl)
+        try fileManager.createFolderIfNotExists(at: installFolderUrl)
+
         let exports1: [String] = AutoconfSettings.compilerAndHostExports(config: config, arch: libXml2.arch)
 
         let autogenArguments: [String] = [
             "--host=\(libXml2.arch.cHost)",
         ]
 
-        let buildFolderUrl = config.buildLocation(for: libXml2)
-        let installFolderUrl = config.installLocation(for: libXml2)
-
-        try fileManager.createFolderIfNotExists(at: buildFolderUrl)
-        try fileManager.createFolderIfNotExists(at: installFolderUrl)
 
         let autogenUrl = sourceLocation.appendingPathComponent("autogen.sh", isDirectory: false)
 

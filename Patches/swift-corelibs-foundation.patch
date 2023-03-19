@@ -1,0 +1,11 @@
+diff --git a/Sources/CMakeLists.txt b/Sources/CMakeLists.txt
+index ab3a1bef..d525a582 100644
+--- a/Sources/CMakeLists.txt
++++ b/Sources/CMakeLists.txt
+@@ -2,4 +2,5 @@ add_subdirectory(UUID)
+ add_subdirectory(Foundation)
+ add_subdirectory(FoundationNetworking)
+ add_subdirectory(FoundationXML)
+-add_subdirectory(Tools)
++# TODO: Check how it works on linux and windows, maye make PR with optional disable for macOS + Android?
++# add_subdirectory(Tools)
