@@ -1,5 +1,6 @@
 import Foundation
 import Logging
+import Shell
 
 extension BuildConfig {
     var toolchainUsr: URL {
@@ -32,6 +33,8 @@ final class CreateToolchaninStep: BuildStep {
             try await component.copy(to: config.toolchainUsr, config: config, logger: logger)
         }
 
+        try await createSymlinkForDylibs(config: config, logger: logger)
+
         throw "Error to avoid complete"
     }
 
@@ -51,6 +54,20 @@ final class CreateToolchaninStep: BuildStep {
         let ndkVersionData = ndkVersion.data(using: .utf8)!
         let ndkVersionFile = config.toolchainRootFolder.appending(path: "NDK_VERSION", directoryHint: .notDirectory)
         try ndkVersionData.write(to: ndkVersionFile)
+    }
+
+    private func createSymlinkForDylibs(config: BuildConfig, logger: Logger) async throws {
+        logger.info("Creating symlinks for libs in usr/lib/swift/macosx")
+        // We habe few libs in `usr/lib/swift/macosx`, but we ned them in `usr/lib/` for linkage
+        let libsFolder = config.toolchainUsr.appending(path: "lib/")
+        let macosLibsFolder = config.toolchainUsr.appending(path: "lib/swift/macosx/")
+        let dylibLibs = try fileManager.categorizedFolderContent(at: macosLibsFolder).files.filter { $0.pathExtension == "dylib" }
+        for dylibLib in dylibLibs {
+            let command = ShellCommand("ln", "-svf", "./swift/macosx/" + dylibLib.lastPathComponent,
+                                       currentDirectoryURL: libsFolder,
+                                       logger: logger)
+            try await command.execute()
+        }
     }
 }
 
