@@ -27,15 +27,15 @@ final class CreateToolchaninStep: BuildStep {
 
         try createTopLevelFsStructure(config: config)
 
-        progressReporter.update(state: .done)
-
         for component in components {
             try await component.copy(to: config.toolchainUsr, config: config, logger: logger)
         }
 
         try await createSymlinkForDylibs(config: config, logger: logger)
 
-        throw "Error to avoid complete"
+        try copyLicences(config: config)
+
+        progressReporter.update(state: .done)
     }
 
     // MARK: Private
@@ -68,6 +68,47 @@ final class CreateToolchaninStep: BuildStep {
                                        logger: logger)
             try await command.execute()
         }
+    }
+
+    private func copyLicences(config: BuildConfig) throws {
+        let destinationRoot = config.toolchainUsr.appending(path: "share")
+        try fileManager.createFolderIfNotExists(at: destinationRoot)
+
+        for repo in Repos.checkoutOrder {
+            print("repo = \(repo.repoName)")
+            let paths = try repo.licencies(config: config)
+            let repoUrl = config.location(for: repo)
+            for path in paths {
+
+                let source = repoUrl.appending(path: path)
+
+                let allPathComponents = [repo.repoName] + path.components(separatedBy: "/")
+                let folders = Array(allPathComponents.dropLast())
+
+                let createdFolder = try fileManager.createPathSubfolders(for: folders, root: destinationRoot)
+
+                let destination = createdFolder.appendingPathComponent(allPathComponents.last!)
+
+                let alreadyExists = fileManager.fileExists(at: destination)
+                guard !alreadyExists else {
+                    continue
+                }
+                
+                try fileManager.copyItem(at: source, to: destination)
+            }
+        }
+    }
+}
+
+private extension FileManager {
+    func createPathSubfolders(for folders: [String], root: URL) throws -> URL {
+        let fileManager: FileManager = .default
+        var currentFolder = root
+        for folder in folders {
+            currentFolder = currentFolder.appending(path: folder, directoryHint: .isDirectory)
+            try fileManager.createFolderIfNotExists(at: currentFolder)
+        }
+        return currentFolder
     }
 }
 
