@@ -54,10 +54,20 @@ enum Repos {
 
 struct LlvmProjectRepo: Checkoutable {
     let githubUrl = "https://github.com/apple/llvm-project.git"
+
+    func licencies(config: BuildConfig) throws -> [String] {
+        [
+            "LICENSE.txt",
+            "clang/LICENSE.txt",
+            "compiler-rt/LICENSE.txt"
+        ]
+    }
 }
 
 struct CMarkRepo: BuildableItem, Checkoutable, NinjaBuildableItem {
     let githubUrl = "https://github.com/apple/swift-cmark.git"
+
+    let repoName: String = "cmark"
 
     func cmakeCacheEntries(config: BuildConfig) -> [String] {
         [
@@ -139,6 +149,12 @@ struct LibDispatchRepo: BuildableItemDependency, Checkoutable {
 
 struct ICURepo: Checkoutable {
     let githubUrl = "https://github.com/unicode-org/icu.git"
+
+    func licencies(config: BuildConfig) throws -> [String] {
+        [
+            "icu4c/LICENSE"
+        ]
+    }
 }
 
 struct LibXml2Repo: Checkoutable {

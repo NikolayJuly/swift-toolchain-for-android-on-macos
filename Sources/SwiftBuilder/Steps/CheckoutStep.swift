@@ -21,6 +21,9 @@ protocol Checkoutable {
 
     /// Will be used as folder name for checkout
     var repoName: String { get }
+
+    /// Relative path to all needed licence files. For example `["clang/LICENSE.txt"]`
+    func licencies(config: BuildConfig) throws -> [String]
 }
 
 extension Checkoutable {
@@ -44,6 +47,21 @@ extension Checkoutable {
         }
 
         return object
+    }
+
+    func licencies(config: BuildConfig) throws -> [String] {
+        let fileManager: FileManager = .default
+        let defaultPaths = ["COPYING", "LICENSE.txt", "LICENSE", "Copyright"]
+        let repoUrl = config.location(for: self)
+        for path in defaultPaths {
+            let file = repoUrl.appending(path: path)
+            let exists = fileManager.fileExists(at: file)
+            guard exists else {
+                continue
+            }
+            return [path]
+        }
+        throw "Failed to find licence file in \(repoUrl.path)"
     }
 }
 
@@ -115,6 +133,7 @@ actor CheckoutStep: BuildStep {
 
                 self.statuses[checkoutable.repoName] = .success
             } catch let exc {
+                logger.error("Failed checkout of \(checkoutable.repoName) with error - \(exc)")
                 self.statuses[checkoutable.repoName] = .failied
                 throw exc
             }

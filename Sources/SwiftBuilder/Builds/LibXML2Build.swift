@@ -68,7 +68,6 @@ private final class BuildLibXml2Step: BuildStep {
             "--host=\(libXml2.arch.cHost)",
         ]
 
-
         let autogenUrl = sourceLocation.appendingPathComponent("autogen.sh", isDirectory: false)
 
         // TODO: Add requirement for autoconf
@@ -89,7 +88,7 @@ private final class BuildLibXml2Step: BuildStep {
             "--disable-static",
             "--enable-shared",
             "--without-http",
-            " --without-html",
+            "--without-html",
             "--without-ftp",
             "--without-python",
             "--host=\(libXml2.arch.cHost)",
@@ -116,6 +115,8 @@ private final class InstallLibXmlStep: BuildStep {
         let progressReporter = StepProgressReporter(step: "Install \(libXml2.name)", initialState: .install)
 
         let buildFolderUrl = config.buildLocation(for: libXml2)
+
+        // This `install-libLTLIBRARIES` config was taken from `swift-corelibs-foundation/build-android`, or
         let installLib = ShellCommand(["make install-libLTLIBRARIES"],
                                    currentDirectoryURL: buildFolderUrl,
                                    logger: logger)

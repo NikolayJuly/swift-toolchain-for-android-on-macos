@@ -1,4 +1,6 @@
 import Foundation
+import Logging
+import Shell
 
 struct LibDispatchBuild: BuildItemForAndroidArch, NinjaBuildableItem {
 
@@ -62,8 +64,17 @@ struct LibDispatchBuild: BuildItemForAndroidArch, NinjaBuildableItem {
         ]
     }
 
+    func buildSteps() -> [BuildStep] {
+        [
+            ConfigureRepoStep(buildableItem: self),
+            NinjaBuildStep(buildableRepo: self),
+            SwiftLibsInstallStep(buildItem: self)
+        ]
+    }
+
     // MARK: Private
 
     private var swift: BuildableItem { Builds.swift }
     private let stdlib: BuildableItem
 }
+

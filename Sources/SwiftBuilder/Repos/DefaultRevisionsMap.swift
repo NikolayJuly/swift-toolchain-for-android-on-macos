@@ -41,7 +41,6 @@ sourcekit-lsp                      : 849de8fbb8248623701ef614da015408ef114f1c
 swift                              : 50794e1ae31a08b492cc717ead6f99e7d6932e21
 swift-argument-parser              : e394bf350e38cb100b6bc4172834770ede1b7232
 swift-atomics                      : 919eb1d83e02121cdb434c7bfc1f0c66ef17febe
-swift-cmark                        : 9c8096a23f44794bde297452d87c455fc4f76d42
 swift-collections                  : 2d33a0ea89c961dcb2b3da2157963d9c0370347e
 swift-corelibs-foundation          : a87d185cecfc50086a592852bae223d5ec214cea
 swift-corelibs-libdispatch         : b602cbb26c5cee1aac51021aa2cd6a30a03b1bd3

@@ -8,6 +8,7 @@ final class StepProgressReporter {
         case build
         case make
         case install
+        case create
         case done
     }
 
@@ -36,18 +37,31 @@ final class StepProgressReporter {
         let stepNameText = "\(step): ".consoleText(.plain)
         let status: ConsoleText
         switch state {
-        case .configure:
-            status = "Configuring...".consoleText(ConsoleStyle(color: .blue))
-        case .build:
-            status = "Building...".consoleText(ConsoleStyle(color: .blue))
-        case .make:
-            status = "Making...".consoleText(ConsoleStyle(color: .blue))
-        case .install:
-            status = "Installing...".consoleText(ConsoleStyle(color: .blue))
+        case .configure, .build, .make, .install, .create:
+            status = state.gerund.consoleText(ConsoleStyle(color: .blue))
         case .done:
             status = "Done".consoleText(ConsoleStyle(color: .green)) +  " in \(timeMesurement.durationString).".consoleText(.plain)
         }
 
         terminal.output(stepNameText + status)
+    }
+}
+
+private extension StepProgressReporter.State {
+    var gerund: String {
+        switch self {
+        case .configure:
+            return "Configuring..."
+        case .build:
+            return "Building..."
+        case .make:
+            return "Making..."
+        case .install:
+            return "Installing..."
+        case .create:
+            return "Creating..."
+        case .done:
+            fatalError()
+        }
     }
 }
