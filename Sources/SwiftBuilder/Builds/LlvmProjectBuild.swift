@@ -23,6 +23,8 @@ struct LlvmProjectBuild: BuildRepoItem, NinjaBuildableItem {
         "clang-libraries"
     ]
 
+    let skipInstall: Bool = true
+
     func cmakeCacheEntries(config: BuildConfig) -> [String] {
         [
             "LLVM_INCLUDE_EXAMPLES=false",

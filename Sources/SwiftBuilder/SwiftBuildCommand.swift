@@ -121,7 +121,7 @@ final class SwiftBuildCommand: AsyncParsableCommand {
                 continue
             }
 
-            let stepNumberString = String(format: "%02d", i+1)
+            let stepNumberString = String(format: "%03d", i+1)
             let logFileName = "Step-\(stepNumberString)-\(step.stepName).log"
             let logFileURL = buildConfig.logsFolder.appendingPathComponent(logFileName, isDirectory: false)
             try? fileManager.removeItem(at: logFileURL)

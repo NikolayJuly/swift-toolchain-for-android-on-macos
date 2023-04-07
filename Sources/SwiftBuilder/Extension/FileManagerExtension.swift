@@ -31,4 +31,31 @@ extension FileManager {
             throw "Failed to create fodler at \(folderUrl.absoluteURL): \(exc)"
         }
     }
+
+    public func categorizedFolderContent(at folderUrl: URL) throws -> (files: [URL], folders: [URL]) {
+        let urls = try contentsOfDirectory(at: folderUrl, includingPropertiesForKeys: [.isDirectoryKey])
+
+        var files = [URL]()
+        var folders = [URL]()
+        folders.reserveCapacity(urls.count)
+        files.reserveCapacity(urls.count)
+
+        for url in urls {
+            let values = try url.resourceValues(forKeys: [.isDirectoryKey])
+
+            let isFolder: Bool
+            if let isDirectory = values.isDirectory {
+                isFolder = isDirectory
+            } else {
+                assert(false, "We request this resource value, when created urls, so info should exists")
+                isFolder = folderExists(at: url)
+            }
+            if isFolder {
+                folders.append(url)
+            } else {
+                files.append(url)
+            }
+        }
+        return (files, folders)
+    }
 }

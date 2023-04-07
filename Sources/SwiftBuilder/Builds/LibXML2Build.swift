@@ -116,6 +116,8 @@ private final class InstallLibXmlStep: BuildStep {
         let progressReporter = StepProgressReporter(step: "Install \(libXml2.name)", initialState: .install)
 
         let buildFolderUrl = config.buildLocation(for: libXml2)
+
+        // This `install-libLTLIBRARIES` config was taken from `swift-corelibs-foundation/build-android`, or
         let installLib = ShellCommand(["make install-libLTLIBRARIES"],
                                    currentDirectoryURL: buildFolderUrl,
                                    logger: logger)
