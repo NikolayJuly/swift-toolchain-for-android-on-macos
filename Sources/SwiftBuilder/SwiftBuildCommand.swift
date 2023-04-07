@@ -9,11 +9,13 @@ struct BuildConfig {
     let workingFolder: URL
     let sourceRoot: URL
 
-    var logsFolder: URL { workingFolder.appendingPathComponent("logs", isDirectory: true) }
+    var logsFolder: URL { workingFolder.appending(path: "logs", directoryHint: .isDirectory) }
 
-    var buildsRootFolder: URL { workingFolder.appendingPathComponent("build", isDirectory: true) }
+    var buildsRootFolder: URL { workingFolder.appending(path: "build", directoryHint: .isDirectory) }
 
-    var installRootFolder: URL { workingFolder.appendingPathComponent("install", isDirectory: true) }
+    var installRootFolder: URL { workingFolder.appending(path: "install", directoryHint: .isDirectory) }
+
+    var toolchainRootFolder: URL { workingFolder.appending(path: "toolchain", directoryHint: .isDirectory) }
 
     // MARK: CMAKE
 
@@ -152,7 +154,9 @@ final class SwiftBuildCommand: AsyncParsableCommand {
 
         let buildSteps: [BuildStep] = Builds.buildOrder.flatMap { $0.buildSteps() }
 
-        return [checkoutStep] + buildSteps
+        let createToolchainStep = CreateToolchaninStep(components: ToolchaninComponents.allComponents)
+
+        return [checkoutStep] + buildSteps + [createToolchainStep]
     }()
 
     private func validation() throws {

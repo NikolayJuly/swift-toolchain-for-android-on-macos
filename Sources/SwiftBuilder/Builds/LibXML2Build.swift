@@ -68,7 +68,6 @@ private final class BuildLibXml2Step: BuildStep {
             "--host=\(libXml2.arch.cHost)",
         ]
 
-
         let autogenUrl = sourceLocation.appendingPathComponent("autogen.sh", isDirectory: false)
 
         // TODO: Add requirement for autoconf
@@ -89,7 +88,7 @@ private final class BuildLibXml2Step: BuildStep {
             "--disable-static",
             "--enable-shared",
             "--without-http",
-            " --without-html",
+            "--without-html",
             "--without-ftp",
             "--without-python",
             "--host=\(libXml2.arch.cHost)",

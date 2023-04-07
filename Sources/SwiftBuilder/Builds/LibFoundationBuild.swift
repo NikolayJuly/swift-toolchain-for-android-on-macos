@@ -93,6 +93,16 @@ struct LibFoundationBuild: BuildItemForAndroidArch, NinjaBuildableItem {
         ]
     }
 
+    func buildSteps() -> [BuildStep] {
+        [
+            ConfigureRepoStep(buildableItem: self),
+            NinjaBuildStep(buildableRepo: self),
+            SwiftLibsInstallStep(buildItem: self)
+        ]
+    }
+
+    // MARK: Private
+
     private let dispatch: BuildableItem
     private var swift: BuildableItem { Builds.swift }
     private let stdlib: BuildableItem
