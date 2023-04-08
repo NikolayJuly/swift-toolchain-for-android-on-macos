@@ -75,7 +75,6 @@ final class CreateToolchaninStep: BuildStep {
         try fileManager.createFolderIfNotExists(at: destinationRoot)
 
         for repo in Repos.checkoutOrder {
-            print("repo = \(repo.repoName)")
             let paths = try repo.licencies(config: config)
             let repoUrl = config.location(for: repo)
             for path in paths {
