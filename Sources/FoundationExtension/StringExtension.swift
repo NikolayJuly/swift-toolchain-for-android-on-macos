@@ -1,8 +1,6 @@
 import Foundation
 
-extension String: LocalizedError { }
-
-extension String {
+public extension String {
     /// Should be called on filename, not path. Will remove last '.ext'
     var fileNameByRemovingExtension: String {
         let components = self.components(separatedBy: ".")

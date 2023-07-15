@@ -12,7 +12,13 @@ let package = Package(
             name: "SwiftBuilder",
             targets: [
                 "SwiftBuilder",
-                "Shell"
+                "Shell",
+            ]),
+        .executable(
+            name: "swiftc-android",
+            targets: [
+                "Shell",
+                "SwiftcAndroid",
             ]),
     ],
     dependencies: [
@@ -27,23 +33,40 @@ let package = Package(
         .package(url: "https://github.com/NikolayJuly/drain-work-pool.git", from: "2.0.0"),
     ],
     targets: [
+        .target(name: "FoundationExtension",
+                dependencies: []),
+        .target(name: "HostConfig",
+                dependencies: ["FoundationExtension"]),
+        .target(
+            name: "Shell",
+            dependencies: [
+                "FoundationExtension",
+                .product(name: "ConsoleKit", package: "console-kit"),
+                .product(name: "Logging", package: "swift-log"),
+            ]),
         .executableTarget(
             name: "SwiftBuilder",
             dependencies: [
+                "FoundationExtension",
+                "HostConfig",
+                "Shell",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "ConsoleKit", package: "console-kit"),
                 .product(name: "FileLogging", package: "swift-log-file"),
                 .product(name: "WorkPoolDraning", package: "drain-work-pool"),
-                "Shell",
             ],
             exclude: [
                 "Repos/HowToGetCommitHashes.md",
             ]),
-        .target(
-            name: "Shell",
+        .executableTarget(
+            name: "SwiftcAndroid",
             dependencies: [
-                .product(name: "Logging", package: "swift-log"),
+                "FoundationExtension",
+                "HostConfig",
+                "Shell",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "ConsoleKit", package: "console-kit"),
+                .product(name: "Logging", package: "swift-log"),
             ]),
     ]
 )

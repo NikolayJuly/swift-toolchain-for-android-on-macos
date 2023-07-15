@@ -1,6 +1,6 @@
 import Foundation
 
-extension Dictionary where Value: Comparable {
+public extension Dictionary where Value: Comparable {
 
     /// If `value` less than `self[key]` - do nothing, discarding `value`
     /// `nil` smaller than any `value`

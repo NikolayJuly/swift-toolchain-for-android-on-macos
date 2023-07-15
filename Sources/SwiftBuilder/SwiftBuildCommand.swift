@@ -2,6 +2,8 @@ import ArgumentParser
 import ConsoleKit
 import FileLogging
 import Foundation
+import FoundationExtension
+import HostConfig
 import Logging
 import Shell
 
@@ -17,9 +19,14 @@ struct BuildConfig {
 
     var toolchainRootFolder: URL { workingFolder.appending(path: "toolchain", directoryHint: .isDirectory) }
 
-    // MARK: CMAKE
+    // TODO: May be we need to make these value configurable
+    let androidApiLevel: String = "21"
 
-    let cmakePath: String
+    // MARK: Android sdk
+
+    let androidSdk: AndroidSDK
+
+    var cmakePath: String { androidSdk.cmake.binFolder.path() }
 
     var cmakeToolchainFile: String {
         ndkPath + "/build/cmake/android.toolchain.cmake"
@@ -27,14 +34,13 @@ struct BuildConfig {
 
     // MARK: NDK
 
-    let ndkPath: String
+    var ndkPath: String { androidSdk.ndk.folderUrl.path() }
 
-    // TODO: May be we need to make these value configurable
-    let androidApiLevel: String = "21"
-    let ndkGccVersion: String = "4.9"
-    let ndkClangVersion: String = "14.0.6"
+    var ndkGccVersion: String { NDK.gccVersion }
+    var ndkClangVersion: String { NDK.clangVersion }
+
     var ndkToolchain: String {
-        ndkPath + "/toolchains/llvm/prebuilt/darwin-x86_64"
+        androidSdk.ndk.toolchain.path()
     }
 
     // MARK: macOS
@@ -69,12 +75,9 @@ final class SwiftBuildCommand: AsyncParsableCommand {
     var workingFolder: URL
 
     @ArgumentParser.Option(name: .long,
-                           help: "Path to folder, which contains smake binary")
-    var cmakePath: String
-
-    @ArgumentParser.Option(name: .long,
-                           help: "Path installed NDK, we expect v25 (25.1.8937393 exactly)")
-    var ndkPath: String
+                           help: "Path to android SDK folder. This folder should contain `ndk` and `cmake` subfolder. Default installation path is - `/Users/$USER/Library/Android/sdk`",
+                           transform: { try AndroidSDK(path: $0) })
+    var androidSdk: AndroidSDK
 
     @ArgumentParser.Option(name: .long,
                            help: "Path to folder, containing package file",
@@ -96,8 +99,6 @@ final class SwiftBuildCommand: AsyncParsableCommand {
             terminal.output(status)
         }
 
-        try validation()
-
         var buildProgress = try BuildProgress(withProgressIn: workingFolder)
 
 
@@ -105,8 +106,7 @@ final class SwiftBuildCommand: AsyncParsableCommand {
 
         let buildConfig = BuildConfig(workingFolder: workingFolder,
                                       sourceRoot: sourceRoot,
-                                      cmakePath: cmakePath,
-                                      ndkPath: ndkPath)
+                                      androidSdk: androidSdk)
 
         try fileManager.createFolderIfNotExists(at: buildConfig.logsFolder)
         try fileManager.createFolderIfNotExists(at: buildConfig.buildsRootFolder)
@@ -154,19 +154,8 @@ final class SwiftBuildCommand: AsyncParsableCommand {
 
         let buildSteps: [BuildStep] = Builds.buildOrder.flatMap { $0.buildSteps() }
 
-        let createToolchainStep = CreateToolchaninStep(components: ToolchaninComponents.allComponents)
+        let createToolchainStep = CreateToolchainStep(components: ToolchaninComponents.allComponents)
 
         return [checkoutStep] + buildSteps + [createToolchainStep]
     }()
-
-    private func validation() throws {
-        let files = try fileManager.contentsOfDirectory(atPath: cmakePath)
-        guard files.contains("cmake") else {
-            throw "There is no `cmake` binary at \(cmakePath)"
-        }
-
-        guard files.contains("ninja") else {
-            throw "There is no `ninja` binary at \(cmakePath)"
-        }
-    }
 }

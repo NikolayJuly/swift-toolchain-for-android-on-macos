@@ -11,14 +11,13 @@ Swift toolchain for android on macos
 ```
 $ swift run SwiftBuilder \
   --working-folder <WORKING_FOLDER> \
-  --cmake-path <PATH_TO_CMAKE_BINARY> \
-  --ndk-path <PATH_TO_NDK_V25>
+  --android-sdk <PATH_TO_ANDROID_SDK>
   --source-root "$PWD"
 ```
 For example, values might be
 WORKING_FOLDER - `~/ws/SwiftAndroid`, this should be empty folder, which will be used by app for checkout and build
-PATH_TO_CMAKE_BINARY - `~/Library/Android/sdk/cmake/3.22.1/bin`
-PATH_TO_NDK_V25 - `~/Library/Android/sdk/ndk/25.1.8937393`
+PATH_TO_ANDROID_SDK - `~/Library/Android/sdk/`, inside we expect ndk fodler with NDK v25
+
 
 If you want try and build with other NDK version, or android API level, modify `BuildConfig` in `SwiftBuildCommand.swift`.
 To change macOS target, like arch or min deployment target - check same `BuildConfig` 
