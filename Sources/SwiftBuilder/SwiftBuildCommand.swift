@@ -19,8 +19,7 @@ struct BuildConfig {
 
     var toolchainRootFolder: URL { workingFolder.appending(path: "toolchain", directoryHint: .isDirectory) }
 
-    // TODO: May be we need to make these value configurable
-    let androidApiLevel: String = "21"
+    let androidApiLevel: String = .androidApiLevel
 
     // MARK: Android sdk
 

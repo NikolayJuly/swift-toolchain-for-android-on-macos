@@ -1,3 +1,4 @@
+import AndroidConfig
 import Foundation
 
 struct StdLibBuild: BuildItemForAndroidArch, NinjaBuildableItem {

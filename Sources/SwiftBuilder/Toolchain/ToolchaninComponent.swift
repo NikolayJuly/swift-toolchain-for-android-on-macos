@@ -1,3 +1,4 @@
+import AndroidConfig
 import Foundation
 import Logging
 import Shell
@@ -52,6 +53,8 @@ extension YamsRepo: ToolchaninComponent {}
 extension SwiftDriverRepo: ToolchaninComponent {}
 
 extension SwiftCryptoRepo: ToolchaninComponent {}
+
+extension SwiftCollectionsRepo: ToolchaninComponent {}
 
 extension LibDispatchBuild: ToolchaninComponent {}
 

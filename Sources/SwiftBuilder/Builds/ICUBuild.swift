@@ -1,4 +1,6 @@
+import AndroidConfig
 import Foundation
+import FoundationExtension
 import Logging
 import Shell
 
@@ -121,7 +123,7 @@ private final class IcuInstallStep: BuildStep {
 
         let toBeRenamedLibs = libsFiles.filter { $0.lastPathComponent.hasSuffix(".so.65.1") }
         guard toBeRenamedLibs.count == 5 else {
-            throw "Install step for \(icu.name) has unexpected number of libs \(toBeRenamedLibs.count)."
+            throw SimpleError("Install step for \(icu.name) has unexpected number of libs \(toBeRenamedLibs.count).")
         }
 
         let toBeRemovedLibs = libsFiles.filter { toBeRenamedLibs.contains($0) == false }

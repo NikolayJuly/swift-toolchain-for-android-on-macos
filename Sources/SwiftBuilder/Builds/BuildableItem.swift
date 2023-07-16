@@ -1,3 +1,4 @@
+import AndroidConfig
 import Foundation
 
 // TODO: Rename struct and property to show actual purpose - apply patches
