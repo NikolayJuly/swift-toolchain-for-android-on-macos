@@ -115,6 +115,14 @@ struct SwiftDriverRepo: BuildableItem, BuildableItemDependency, Checkoutable, Ni
     init(dependencies: [String: BuildableItemDependency]) {
         self.dependencies = dependencies
     }
+
+    func cmakeCacheEntries(config: BuildConfig) -> [String] {
+        [
+            "CMAKE_Swift_FLAGS=\"-Xlinker -rpath -Xlinker @executable_path/../lib\"",
+            "USE_CMAKE_INSTALL=TRUE",
+            "CMAKE_BUILD_WITH_INSTALL_RPATH=true",
+        ]
+    }
 }
 
 struct SwiftCryptoRepo: BuildableItem, BuildableItemDependency, Checkoutable, NinjaBuildableItem {
