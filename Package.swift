@@ -33,6 +33,8 @@ let package = Package(
         .package(url: "https://github.com/NikolayJuly/drain-work-pool.git", from: "2.0.0"),
     ],
     targets: [
+        .target(name: "AndroidConfig",
+                dependencies: []),
         .target(name: "FoundationExtension",
                 dependencies: []),
         .target(name: "HostConfig",
@@ -47,6 +49,7 @@ let package = Package(
         .executableTarget(
             name: "SwiftBuilder",
             dependencies: [
+                "AndroidConfig",
                 "FoundationExtension",
                 "HostConfig",
                 "Shell",
@@ -61,6 +64,7 @@ let package = Package(
         .executableTarget(
             name: "SwiftcAndroid",
             dependencies: [
+                "AndroidConfig",
                 "FoundationExtension",
                 "HostConfig",
                 "Shell",

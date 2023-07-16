@@ -15,6 +15,11 @@ public struct NDK {
 
     public let toolchain: URL
 
+    public init(folderPath: String) throws {
+        let url = URL(filePath: folderPath, directoryHint: .isDirectory)
+        try self.init(folderUrl: url)
+    }
+
     /// On init, NDK will execute minor validation, to make sure that it has expected structure and version
     public init(folderUrl: URL) throws {
 
