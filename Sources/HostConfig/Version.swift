@@ -10,7 +10,7 @@ struct Version: Comparable, Equatable {
 
     let versionString: String
 
-    /// 3-4 digits, separated by '.'
+    /// 3-4 numbers, separated by '.'
     init(_ version: String) throws {
         let numberStrings = version.components(separatedBy: ".").prefix(3)
         var numbers = [Int]()

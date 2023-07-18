@@ -44,8 +44,11 @@ struct BuildConfig {
 
     // MARK: macOS
 
-    let macOsTarget = "12.0" // deployment target
-    let macOsArch = "arm64"
+    /// deployment target
+    var macOsTarget: String { macOs.deploymentTarget }
+    var macOsArch: String { macOs.arch }
+
+    private let macOs: MacOS
 }
 
 protocol BuildStep {
