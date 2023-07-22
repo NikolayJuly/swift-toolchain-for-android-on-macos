@@ -1,3 +1,4 @@
+import AndroidConfig
 import Foundation
 import Logging
 import Shell
@@ -12,7 +13,7 @@ extension BuildConfig {
     }
 }
 
-final class CreateToolchaninStep: BuildStep {
+final class CreateToolchainStep: BuildStep {
 
     init(components: [ToolchaninComponent]) {
         self.components = components
@@ -75,7 +76,6 @@ final class CreateToolchaninStep: BuildStep {
         try fileManager.createFolderIfNotExists(at: destinationRoot)
 
         for repo in Repos.checkoutOrder {
-            print("repo = \(repo.repoName)")
             let paths = try repo.licencies(config: config)
             let repoUrl = config.location(for: repo)
             for path in paths {

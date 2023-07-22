@@ -1,3 +1,4 @@
+import AndroidConfig
 import Foundation
 
 extension BuildConfig {

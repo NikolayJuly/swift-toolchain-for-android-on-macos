@@ -11,24 +11,24 @@ Swift toolchain for android on macos
 ```
 $ swift run SwiftBuilder \
   --working-folder <WORKING_FOLDER> \
-  --cmake-path <PATH_TO_CMAKE_BINARY> \
-  --ndk-path <PATH_TO_NDK_V25>
+  --android-sdk <PATH_TO_ANDROID_SDK>
   --source-root "$PWD"
 ```
-For example, values might be
-WORKING_FOLDER - `~/ws/SwiftAndroid`, this should be empty folder, which will be used by app for checkout and build
-PATH_TO_CMAKE_BINARY - `~/Library/Android/sdk/cmake/3.22.1/bin`
-PATH_TO_NDK_V25 - `~/Library/Android/sdk/ndk/25.1.8937393`
+For example, values might be:
+- WORKING_FOLDER - `~/ws/SwiftAndroid`, this should be empty folder, which will be used by app for checkout and build
+- PATH_TO_ANDROID_SDK - `~/Library/Android/sdk/`, inside we expect ndk fodler with NDK v25
 
-If you want try and build with other NDK version, or android API level, modify `BuildConfig` in `SwiftBuildCommand.swift`.
-To change macOS target, like arch or min deployment target - check same `BuildConfig` 
+To modify some constants:
+- NDK version in `HostConfig/NDK.swift`
+- Android API level in `AndroidConfig/AndroidAPILevel.swift`
+- To change macOS target, like arch or min deployment target - check `HostConfig/MacOS.swift` 
 
 While building, we will save progress with completed steps in `current-progress.json`. 
-This helps us avoid re-running long build operations, if we encountered any problem
-If you want start from scratch - just delete this file from working folder. Alternatively, you can manually remove steps, which you want to repeat
+This helps us avoid re-running long build operations, if we encountered any problem.
+If you want start from scratch - just delete file from working folder. Alternatively, you can manually remove steps, which you want to repeat.
 
 
-## How to update code fore new release
+## How to update code for a new release
 
 1. Find new release tag in [github repo](https://github.com/apple/swift.git)
 2. Follow steps [here](./Sources/SwiftBuilder/Repos/HowToGetCommitHashes.md) to update default checkout hashes

@@ -1,6 +1,7 @@
 import ConsoleKit
 import FileLogging
 import Foundation
+import FoundationExtension
 import Logging
 import RegexBuilder
 import Shell
@@ -31,7 +32,7 @@ extension Checkoutable {
         var revision = self.revision
         if revision == .parseFromUpdateCheckoutOuput {
             guard let defaultRevision = defaultRevisionsMap[repoName] else {
-                throw "No default revision for \(repoName)"
+                throw SimpleError("No default revision for \(repoName)")
             }
             revision = defaultRevision
         }
@@ -43,7 +44,7 @@ extension Checkoutable {
         case let .tag(tag):
             object = tag
         case .parseFromUpdateCheckoutOuput:
-            throw "Unepected value of revision for \(repoName)"
+            throw SimpleError("No default revision for \(repoName)")
         }
 
         return object
@@ -61,7 +62,7 @@ extension Checkoutable {
             }
             return [path]
         }
-        throw "Failed to find licence file in \(repoUrl.path)"
+        throw SimpleError("Failed to find licence file in \(repoUrl.path)")
     }
 }
 

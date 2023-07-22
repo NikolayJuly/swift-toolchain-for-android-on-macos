@@ -1,6 +1,6 @@
 import Foundation
 
-extension FileManager {
+public extension FileManager {
     func fileExists(at fileUrl: URL) -> Bool {
         var isDir: ObjCBool = false
         let exists = fileExists(atPath: fileUrl.path, isDirectory: &isDir)
@@ -28,11 +28,11 @@ extension FileManager {
         do {
             try createDirectory(at: folderUrl, withIntermediateDirectories: false, attributes: nil)
         } catch let exc {
-            throw "Failed to create fodler at \(folderUrl.absoluteURL): \(exc)"
+            throw SimpleError("Failed to create fodler at \(folderUrl.absoluteURL): \(exc)")
         }
     }
 
-    public func categorizedFolderContent(at folderUrl: URL) throws -> (files: [URL], folders: [URL]) {
+    func categorizedFolderContent(at folderUrl: URL) throws -> (files: [URL], folders: [URL]) {
         let urls = try contentsOfDirectory(at: folderUrl, includingPropertiesForKeys: [.isDirectoryKey])
 
         var files = [URL]()

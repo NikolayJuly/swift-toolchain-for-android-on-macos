@@ -1,3 +1,4 @@
+import AndroidConfig
 import Foundation
 
 enum Builds {
@@ -17,7 +18,11 @@ enum Builds {
             Builds.swift,
         ]
 
-        return upToSwift + icus +  libs
+        let customExecutables: [BuildableItem] = [
+            SwiftcAndroidBuild()
+        ]
+
+        return upToSwift + icus +  libs + customExecutables
     }()
 
     static let llvm = LlvmProjectBuild()
