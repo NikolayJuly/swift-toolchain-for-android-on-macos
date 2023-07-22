@@ -2,7 +2,6 @@ import AndroidConfig
 import Foundation
 import FoundationExtension
 
-
 extension String {
     // TODO: Add to documentation NDK_PATH env key
     static let ndkPathEnvKey = "NDK_PATH"
@@ -35,6 +34,5 @@ struct Arguments {
         self.target = androidArch
 
         self.isVerbose = commandArguments.contains("-v")
-
     }
 }
