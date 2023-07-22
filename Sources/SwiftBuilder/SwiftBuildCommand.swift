@@ -48,7 +48,7 @@ struct BuildConfig {
     var macOsTarget: String { macOs.deploymentTarget }
     var macOsArch: String { macOs.arch }
 
-    private let macOs: MacOS
+    private let macOs: MacOS = MacOS()
 }
 
 protocol BuildStep {
@@ -97,7 +97,7 @@ final class SwiftBuildCommand: AsyncParsableCommand {
         let timeMesurement = TimeMesurement()
 
         defer {
-            let status = "Build ocmpleted in \(timeMesurement.durationString)".consoleText(.plain)
+            let status = "Build completed in \(timeMesurement.durationString)".consoleText(.plain)
             terminal.output(status)
         }
 

@@ -17,19 +17,19 @@ final class SwiftLibsInstallStep: BuildStep {
         // We need move to some files:
         // - for comfort, we need remove top level `usr` folder, it will allow us simpler copying to toolchain later
         // - we need move .so files to `lib/swift/android/<arch>` from just `lib/swift/android`, to simplify copying later
-        let installFodler = config.installLocation(for: buildItem)
-        let usrUrl = installFodler.appending(path: "usr/")
+        let installFolder = config.installLocation(for: buildItem)
+        let usrUrl = installFolder.appending(path: "usr/")
         if fileManager.folderExists(at: usrUrl) {
             let libUrl = usrUrl.appending(path: "lib/")
-            let libDestination = installFodler.appending(path: "lib/")
+            let libDestination = installFolder.appending(path: "lib/")
             try? fileManager.removeItem(at: libDestination)
             try fileManager.moveItem(at: libUrl, to: libDestination)
             try fileManager.removeItem(at: usrUrl)
         }
 
-        let adroidFolder = installFodler.appending(path: "lib/swift/android/")
-        let soFiles = try fileManager.categorizedFolderContent(at: adroidFolder).files.filter { $0.pathExtension == "so" }
-        let archFolder = adroidFolder.appending(path: buildItem.arch.swiftArch + "/")
+        let androidFolder = installFolder.appending(path: "lib/swift/android/")
+        let soFiles = try fileManager.categorizedFolderContent(at: androidFolder).files.filter { $0.pathExtension == "so" }
+        let archFolder = androidFolder.appending(path: buildItem.arch.swiftArch + "/")
         for file in soFiles {
             let destination = archFolder.appending(path: file.lastPathComponent)
             try? fileManager.removeItem(at: destination)

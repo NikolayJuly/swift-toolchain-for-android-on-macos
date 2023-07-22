@@ -64,13 +64,13 @@ extension BuildableItem where Self: BuildItemForAndroidArch {
 }
 
 extension BuildConfig {
-    func buildLocation(for repo: BuildableItem) -> URL {
-        return buildsRootFolder.appendingPathComponent(repo.name, isDirectory: true)
+    func buildLocation(for buildableItem: BuildableItem) -> URL {
+        return buildsRootFolder.appendingPathComponent(buildableItem.name, isDirectory: true)
     }
 }
 
 extension BuildConfig {
-    func installLocation(for repo: BuildableItem) -> URL {
-        return installRootFolder.appendingPathComponent(repo.name, isDirectory: true)
+    func installLocation(for buildableItem: BuildableItem) -> URL {
+        return installRootFolder.appendingPathComponent(buildableItem.name, isDirectory: true)
     }
 }

@@ -112,8 +112,8 @@ private final class IcuInstallStep: BuildStep {
         let defaultInstall = MakeInstallStep(buildableItem: icu)
         try await defaultInstall.execute(config, logger: logger)
 
-        let installFodler = config.installLocation(for: icu)
-        let installLibsFolder = installFodler.appendingPathComponent("lib", isDirectory: true)
+        let installFolder = config.installLocation(for: icu)
+        let installLibsFolder = installFolder.appendingPathComponent("lib", isDirectory: true)
 
         let libsFiles = try fileManager.categorizedFolderContent(at: installLibsFolder).files
 

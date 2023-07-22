@@ -36,7 +36,9 @@ let package = Package(
         .target(name: "AndroidConfig",
                 dependencies: []),
         .target(name: "FoundationExtension",
-                dependencies: []),
+                dependencies: [
+                    .product(name: "Logging", package: "swift-log"),
+                ]),
         .target(name: "HostConfig",
                 dependencies: ["FoundationExtension"]),
         .target(

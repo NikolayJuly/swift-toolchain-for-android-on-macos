@@ -15,8 +15,8 @@ final class ArchedLibToolchainComponent: ToolchaninComponent {
 
         let destinationFolder = config.toolchainAndroidsLib(for: buildItem.arch)
 
-        let installFodler = config.installLocation(for: buildItem)
-        let libsFolder = installFodler.appending(path: "lib/")
+        let installFolder = config.installLocation(for: buildItem)
+        let libsFolder = installFolder.appending(path: "lib/")
         let libsSoFiles = try fileManager.categorizedFolderContent(at: libsFolder).files.filter { $0.pathExtension == "so" }
 
         for libsSoFile in libsSoFiles {
