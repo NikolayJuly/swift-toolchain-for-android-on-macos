@@ -7,7 +7,28 @@ Swift toolchain for android on macos
 - Recent xcode vetsion installed on mac
 - Install NDK and CMake. [Instructions](https://developer.android.com/studio/projects/install-ndk)
 
-## Execute
+## Use toolchain
+
+Here are steps to compile package
+
+- `$ export PATH="<toolchain_path>/usr/bin:$PATH"`
+- `$ export SWIFT_EXEC_MANIFEST=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc`
+- `export SWIFT_EXEC=<toolchain_path>/usr/bin/swiftc-android`  and `swiftc-android` should be executable
+- `cd <package_path>`
+-
+ ```
+ swift build --triple aarch64-unknown-linux-android \
+    --emit-swift-module-separately \
+    --sdk <toolchain_path> \
+    --toolchain <toolchain_path>/bin \
+    -Xswiftc -emit-library \
+    -Xswiftc -emit-module \
+    -Xcc -I-I$USER/Library/Android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include \
+    -Xcc -I-I$USER/Library/Android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/aarch64-linux-android \
+    -v
+```
+
+## Build toolchain
 ```
 $ swift run SwiftBuilder \
   --working-folder <WORKING_FOLDER> \
@@ -34,3 +55,6 @@ If you want start from scratch - just delete file from working folder. Alternati
 2. Follow steps [here](./Sources/SwiftBuilder/Repos/HowToGetCommitHashes.md) to update default checkout hashes
 3. Consider changing `CMAKE_OSX_DEPLOYMENT_TARGET`
 4. Execute and fix issue by issue...
+
+
+

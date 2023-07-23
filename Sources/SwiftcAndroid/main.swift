@@ -65,17 +65,25 @@ if existeApiLevelParametr != nil {
 
 let ndkToolchainPath = host.ndk.toolchain.path(percentEncoded: false)
 
+let sysrootLibs = "\(ndkToolchainPath)/sysroot/usr/lib/\(arguments.target.ndkLibArchName)/\(String.androidApiLevel)"
+
 let extraArguments: [String] = [
-    "-tools-directory", ndkToolchainPath,
-    "-Xclang-linker", "--sysroot=\(ndkToolchainPath)/sysroot/usr/lib/\(arguments.target.ndkLibArchName)/\(String.androidApiLevel)",
-    "-Xclang-linker", "--gcc-toolchain=ndkToolchainPath",
+    "-tools-directory", "\(ndkToolchainPath)/bin",
+    "-Xclang-linker", "--sysroot=\(sysrootLibs)",
+    "-Xclang-linker", "--gcc-toolchain=\(ndkToolchainPath)",
+
+    // Here is explanation, that we need -B with path passed to linker, so it will search for crtbegin + crtend
+    // https://github.com/android/ndk/issues/1690#issuecomment-1529928723
+    "-Xclang-linker", "-B",
+    "-Xclang-linker", "\(sysrootLibs)",
+
     "-Xcc", "-I\(ndkToolchainPath)/sysroot/usr/include",
     "-Xcc", "-I\(ndkToolchainPath)/sysroot/usr/include/\(arguments.target.ndkLibArchName)",
-    "-L", "\(toolchainRootFolderPath)/usr/lib/swift/android/\(arguments.target.swiftArch)"
+    "-L", "\(toolchainRootFolderPath)/usr/lib/swift/android/\(arguments.target.swiftArch)",
+    "-L", "\(sysrootLibs)",
 ] + adnroidApiArgument
 
 let newArguments = CommandLine.arguments.dropFirst() + extraArguments
 
 let callSwiftC = ExecuteBinaryCommand(swiftcUrl, Array(newArguments), logger: logger)
 try await callSwiftC.execute()
-
