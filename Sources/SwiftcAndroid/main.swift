@@ -23,9 +23,9 @@ let isArbitraryCall = CommandLine.argc == 2
 // Right now I found one mroe extra case `-modulewrap`. This is not compile operation.
 // I will do a trick here - if I can't see `.swift` in arguments, mean this is not a compile command, and I will not add anything
 // FIXME: I start thinking that this executable should not exist at all, we should be able to pass all needed parameters with `-Xswiftc`
-let isModeuleWrap = CommandLine.arguments.dropFirst().contains("-modulewrap")
+let isModuleWrap = CommandLine.arguments.dropFirst().contains("-modulewrap")
 
-let shouldEnrichCall = !isModeuleWrap && !isArbitraryCall
+let shouldEnrichCall = !modulewrap && !isArbitraryCall
 
 guard shouldEnrichCall else {
 
