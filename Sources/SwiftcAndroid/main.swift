@@ -18,26 +18,29 @@ let currentDirectoryURL = URL(filePath: fileManager.currentDirectoryPath, direct
 
 // Apart from call to compile, we might get couple extra calls
 // Lets move this away from our path
-if CommandLine.argc == 2 {
+let isArbitraryCall = CommandLine.argc == 2
 
-    let flag = CommandLine.arguments[1]
-    switch flag {
-    case "-print-target-info",
-        "--version":
-        let silentLogger = Logger(label: "swiftc-android",
-                                  factory: { SwiftLogNoOpLogHandler($0) })
+// Right now I found one mroe extra case `-modulewrap`. This is not compile operation.
+// I will do a trick here - if I can't see `.swift` in arguments, mean this is not a compile command, and I will not add anything
+// FIXME: I start thinking that this executable should not exist at all, we should be able to pass all needed parameters with `-Xswiftc`
+let isModeuleWrap = CommandLine.arguments.dropFirst().contains("-modulewrap")
 
-        let swiftcCommand = ExecuteBinaryCommand(swiftcUrl,
-                                                 flag,
-                                                 currentDirectoryURL: currentDirectoryURL,
-                                                 logger: silentLogger)
-        let output = try await swiftcCommand.execute()
-        // we need to reprint exact output
-        print(output)
-        exit(0)
-    default:
-        throw SimpleError("Unknown single flag passed to compiler, please update supported list")
-    }
+let shouldEnrichCall = !isModeuleWrap && !isArbitraryCall
+
+guard shouldEnrichCall else {
+
+    let passedArguments = CommandLine.arguments.dropFirst()
+    let silentLogger = Logger(label: "swiftc-android",
+                              factory: { SwiftLogNoOpLogHandler($0) })
+
+    let swiftcCommand = ExecuteBinaryCommand(swiftcUrl,
+                                             Array(passedArguments),
+                                             currentDirectoryURL: currentDirectoryURL,
+                                             logger: silentLogger)
+    let output = try await swiftcCommand.execute()
+    // we need to reprint exact output
+    print(output)
+    exit(0)
 }
 
 // We assume that this call is to compile, so we will add extra parameters needed for android
