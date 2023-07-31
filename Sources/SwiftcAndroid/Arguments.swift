@@ -18,9 +18,9 @@ struct Arguments {
             throw SimpleError("Failed to find `-target` in command arguments: \(commandArguments.joined(separator: " "))")
         }
 
-        let targetIndex = targetKeyIndex + 1
+        let targetIndex = commandArguments.index(after: targetKeyIndex)
 
-        guard commandArguments.count > targetIndex else {
+        guard commandArguments.endIndex > targetIndex else {
             throw SimpleError("Failed to find value for `-target` in command arguments: \(commandArguments.joined(separator: " "))")
         }
 

@@ -12,13 +12,16 @@ let package = Package(
             name: "SwiftBuilder",
             targets: [
                 "SwiftBuilder",
-                "Shell",
             ]),
         .executable(
             name: "swiftc-android",
             targets: [
-                "Shell",
                 "SwiftcAndroid",
+            ]),
+        .executable(
+            name: "swift-on-android-test",
+            targets: [
+                "SampleAndroidBinary"
             ]),
     ],
     dependencies: [
@@ -41,6 +44,7 @@ let package = Package(
                 ]),
         .target(name: "HostConfig",
                 dependencies: ["FoundationExtension"]),
+        .executableTarget(name: "SampleAndroidBinary"),
         .target(
             name: "Shell",
             dependencies: [

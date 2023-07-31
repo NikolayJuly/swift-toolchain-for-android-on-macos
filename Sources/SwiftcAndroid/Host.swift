@@ -10,26 +10,26 @@ struct Host {
         let ndkDefaultPath = "Library/Android/sdk/ndk"
 
         let envNdkPath = ProcessInfo.processInfo.environment[.ndkPathEnvKey]
+        let envNdkUrl = envNdkPath.map { URL(filePath: $0, directoryHint: .isDirectory) }
         let defaultNdksFolderUrl = fileManager.homeDirectoryForCurrentUser.appending(path: ndkDefaultPath, directoryHint: .isDirectory)
 
         var errors = [Error]()
 
-        let defaultNDKFolder: URL?
+        let defaultNDKFolders: [URL]
         do {
             let (_, ndkFodlers) = try fileManager.categorizedFolderContent(at: defaultNdksFolderUrl)
-            defaultNDKFolder = ndkFodlers.first
+            defaultNDKFolders = ndkFodlers
         } catch {
-            defaultNDKFolder = nil
+            defaultNDKFolders = []
             errors.append(error)
         }
 
-        let defaultNDKFolderPath = defaultNDKFolder?.path(percentEncoded: false)
 
-        let paths: [String?] = [envNdkPath, defaultNDKFolderPath]
-        let ndk: NDK? = paths.compactMap { $0 }.lazy
-            .compactMap { path -> NDK? in
+        let folderUrls: [URL?] = [envNdkUrl] + defaultNDKFolders
+        let ndk: NDK? = folderUrls.compactMap { $0 }.lazy
+            .compactMap { folderUrl -> NDK? in
                 do {
-                    return try NDK(folderPath: path)
+                    return try NDK(folderUrl: folderUrl)
                 } catch {
                     errors.append(error)
                     return nil
@@ -37,7 +37,7 @@ struct Host {
             }.first
 
         guard let ndk else {
-            throw CompositeError(errors, message: "Failed to find NDK. We check anv NDK_PATH and default path ~/\(ndkDefaultPath): \(paths.compactMap { $0 })")
+            throw CompositeError(errors, message: "Failed to find NDK. We check anv NDK_PATH and default path ~/\(ndkDefaultPath): \(defaultNDKFolders.compactMap { $0 })")
         }
 
         self.ndk = ndk
