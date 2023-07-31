@@ -2,7 +2,7 @@ import Foundation
 import FoundationExtension
 
 /// Version, were all elements are integers, might contain build, if it is integer
-struct Version: Comparable, Equatable {
+struct Version: Comparable, Equatable, CustomStringConvertible {
 
     let major: Int
     let minor: Int
@@ -42,6 +42,10 @@ struct Version: Comparable, Equatable {
             return lhsNumbers[i] < rhsNumbers[i]
         }
         return true
+    }
+
+    var description: String {
+        versionString
     }
 
     // MARK: Private
