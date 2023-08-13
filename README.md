@@ -23,8 +23,8 @@ Here are steps to compile package
     --toolchain <toolchain_path>/bin \
     -Xswiftc -emit-library \
     -Xswiftc -emit-module \
-    -Xcc -I-I$USER/Library/Android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include \
-    -Xcc -I-I$USER/Library/Android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/aarch64-linux-android \
+    -Xcc -I/Users/$USER/Library/Android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include \
+    -Xcc -I/Users/$USER/Library/Android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/aarch64-linux-android \
     -v
 ```
 

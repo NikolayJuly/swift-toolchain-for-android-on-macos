@@ -20,12 +20,12 @@ let currentDirectoryURL = URL(filePath: fileManager.currentDirectoryPath, direct
 // Lets move this away from our path
 let isArbitraryCall = CommandLine.argc == 2
 
-// Right now I found one mroe extra case `-modulewrap`. This is not compile operation.
+// Right now I found one more extra case `-modulewrap`. This is not compile operation.
 // I will do a trick here - if I can't see `.swift` in arguments, mean this is not a compile command, and I will not add anything
 // FIXME: I start thinking that this executable should not exist at all, we should be able to pass all needed parameters with `-Xswiftc`
 let isModuleWrap = CommandLine.arguments.dropFirst().contains("-modulewrap")
 
-let shouldEnrichCall = !modulewrap && !isArbitraryCall
+let shouldEnrichCall = !isModuleWrap && !isArbitraryCall
 
 guard shouldEnrichCall else {
 
