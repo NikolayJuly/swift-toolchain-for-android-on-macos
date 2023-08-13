@@ -81,8 +81,8 @@ struct LibFoundationBuild: BuildItemForAndroidArch, NinjaBuildableItem {
             // ICU
             "ICU_LIBRARY=\(icuInstallPath)/lib",
             "ICU_INCLUDE_DIR=\(icuInstallPath)/include",
-            "ICU_I18N_LIBRARY_RELEASE=\(icuInstallPath)/lib/libicui18nswift.so",
-            "ICU_UC_LIBRARY_RELEASE=\(icuInstallPath)/lib/libicuucswift.so",
+            "ICU_I18N_LIBRARY_RELEASE=\(icuInstallPath)/lib/libicui18n.so",
+            "ICU_UC_LIBRARY_RELEASE=\(icuInstallPath)/lib/libicuuc.so",
 
             // XML
             "LIBXML2_INCLUDE_DIR=\(libXmlInstallPath)/include/libxml2",

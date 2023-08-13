@@ -73,7 +73,6 @@ private final class BuildIcuStep: BuildStep {
         let arguments: [String] = [
             "--prefix=\(installFolderUrl.path)",
             "--host=\(icu.arch.ndkLibArchName)",
-            "--with-library-suffix=swift",
             "--enable-static=no",
             "--enable-shared",
             "--enable-extras=no",
