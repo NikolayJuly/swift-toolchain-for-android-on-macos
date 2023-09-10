@@ -3,11 +3,22 @@ import FoundationExtension
 
 public struct AndroidSDK {
 
+    public let sdkRootUrl: URL
+
     public let ndk: NDK
     public let cmake: CMake
 
     /// On init, AndroidSDK will search for valid cmake and ndk
     public init(path: String) throws {
+
+        self.sdkRootUrl = URL(filePath: path, directoryHint: .isDirectory)
+
+        let fileManager = FileManager.default
+
+        guard fileManager.folderExists(at: sdkRootUrl) else {
+            throw SimpleError("Android SDK folder doesn't exist at \(path)")
+        }
+
         let ndksFolderPath = path + "/ndk"
 
         self.ndk = try Self.create(itemsFolderPath: ndksFolderPath, name: "ndk", create: NDK.init)

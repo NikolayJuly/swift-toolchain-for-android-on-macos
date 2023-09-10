@@ -3,6 +3,7 @@ import Foundation
 
 final class StepProgressReporter {
 
+    // TODO: Replace many states with "executing state" with string for console
     enum State {
         case configure
         case build

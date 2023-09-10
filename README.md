@@ -32,7 +32,7 @@ Here are steps to compile package
 ```
 $ swift run SwiftBuilder \
   --working-folder <WORKING_FOLDER> \
-  --android-sdk <PATH_TO_ANDROID_SDK>
+  --android-sdk <PATH_TO_ANDROID_SDK> \
   --source-root "$PWD"
 ```
 For example, values might be:

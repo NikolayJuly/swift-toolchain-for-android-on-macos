@@ -136,7 +136,12 @@ final class SwiftBuildCommand: AsyncParsableCommand {
 
             stepLogger.info("Executing step \(type(of: step))")
 
-            try await step.execute(buildConfig, logger: stepLogger)
+            do {
+                try await step.execute(buildConfig, logger: stepLogger)
+            } catch {
+                stepLogger.error("Caught error - \(error)")
+                throw error
+            }
 
             if buildProgress.completedSteps.contains(step.stepName) == false {
                 buildProgress = buildProgress.updated(byAdding: step.stepName)
@@ -158,6 +163,8 @@ final class SwiftBuildCommand: AsyncParsableCommand {
 
         let createToolchainStep = CreateToolchainStep(components: ToolchaninComponents.allComponents)
 
-        return [checkoutStep] + buildSteps + [createToolchainStep]
+        let runInEmulator = RunBinaryInEmulatorStep()
+
+        return [checkoutStep] + buildSteps + [createToolchainStep, runInEmulator]
     }()
 }
