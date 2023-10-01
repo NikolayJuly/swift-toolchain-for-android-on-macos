@@ -34,14 +34,14 @@ actor AndroidEmulator {
         }
 
         let runEmulator = ExecuteBinaryCommand(emulatorBinaryUrl,
-                                                 "-avd", "Pixel_6_API_33",
-                                                 "-netdelay", "none",
-                                                 "-netspeed", "full",
-                                                 "-no-audio",
-                                                 "-no-window",
-                                                 "-id", "swift_test",
-                                                 "-port", .emulatorPrt,
-                                                 logger: logger)
+                                               "-avd", avdName,
+                                               "-netdelay", "none",
+                                               "-netspeed", "full",
+                                               "-no-audio",
+                                               "-no-window",
+                                               "-id", "swift_test",
+                                               "-port", .emulatorPrt,
+                                               logger: logger)
 
         await withCheckedContinuation { continuation in
             Task {
