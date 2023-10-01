@@ -74,7 +74,6 @@ let package = Package(
                 "FoundationExtension",
                 "HostConfig",
                 "Shell",
-                .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "ConsoleKit", package: "console-kit"),
                 .product(name: "Logging", package: "swift-log"),
             ]),
