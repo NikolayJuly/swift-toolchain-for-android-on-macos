@@ -3,11 +3,11 @@ import Foundation
 
 extension BuildConfig {
     func clangPath(for arch: AndroidArch) -> String {
-        ndkToolchain + "/bin/\(arch.clangFilenamePrefix)\(androidApiLevel)-clang"
+        ndk.toolchainPath + "/bin/\(arch.clangFilenamePrefix)\(androidApiLevel)-clang"
     }
 
     func clangPpPath(for arch: AndroidArch) -> String {
-        ndkToolchain + "/bin/\(arch.clangFilenamePrefix)\(androidApiLevel)-clang++"
+        ndk.toolchainPath + "/bin/\(arch.clangFilenamePrefix)\(androidApiLevel)-clang++"
     }
 }
 

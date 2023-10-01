@@ -18,7 +18,7 @@ final class MakeStep: BuildStep {
         let buildFolderUrl = config.buildLocation(for: buildableItem)
         let command = ShellCommand(["make"] + makeArgs,
                                    currentDirectoryURL: buildFolderUrl,
-                                   environment: ["PATH": "\(config.ndkToolchain)/bin"],
+                                   environment: ["PATH": "\(config.ndk.toolchainPath)/bin"],
                                    logger: logger)
         try await command.execute()
 
