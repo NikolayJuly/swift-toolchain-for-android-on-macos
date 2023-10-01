@@ -18,7 +18,7 @@ Package.resolved
 
 ## User settings
 xcuserdata/
-swift-builder.xcscheme
+.swiftpm/xcode/xcshareddata/xcschemes/swift-builder-Package.xcscheme
 
 ## compatibility with Xcode 8 and earlier (ignoring not required starting Xcode 9)
 *.xcscmblueprint
