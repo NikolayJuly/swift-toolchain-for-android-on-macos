@@ -33,7 +33,7 @@ struct StdLibBuild: BuildItemForAndroidArch, NinjaBuildableItem {
             "SWIFT_HOST_VARIANT_SDK=ANDROID",
             "SWIFT_HOST_VARIANT_ARCH=" + arch.swiftArch,
             "SWIFT_SDKS=\"ANDROID\"",
-            "SWIFT_STANDARD_LIBRARY_SWIFT_FLAGS='-sdk;\(config.ndkToolchain)/sysroot'", // also might add `;-v` for verbose
+            "SWIFT_STANDARD_LIBRARY_SWIFT_FLAGS='-sdk;\(config.ndk.toolchainPath)/sysroot'", // also might add `;-v` for verbose
 
             "SWIFT_ENABLE_EXPERIMENTAL_CONCURRENCY=TRUE",
 

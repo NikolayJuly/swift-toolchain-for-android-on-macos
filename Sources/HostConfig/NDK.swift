@@ -15,6 +15,22 @@ public struct NDK {
 
     public let toolchain: URL
 
+    public var toolchainPath: String {
+        toolchain.path()
+    }
+
+    public var sysrootLib: URL {
+        toolchain.appending(path: "/sysroot/usr/lib", directoryHint: .isDirectory)
+    }
+
+    public var sysrootLibPath: String {
+        sysrootLib.path()
+    }
+
+    public var sysrootIncludePath: String {
+        toolchainPath + "/sysroot/usr/include"
+    }
+
     public init(folderPath: String) throws {
         let url = URL(filePath: folderPath, directoryHint: .isDirectory)
         try self.init(folderUrl: url)
@@ -28,7 +44,7 @@ public struct NDK {
         let version = try Version(ndkVersionString)
 
         guard "\(version.major)" == Self.version else {
-            throw SimpleError("Currently we workign only with NDK v\(version)")
+            throw SimpleError("Currently we workign only with NDK v\(version.versionString)")
         }
 
         self.toolchain = folderUrl.appending(path: "/toolchains/llvm/prebuilt/darwin-x86_64", directoryHint: .isDirectory)

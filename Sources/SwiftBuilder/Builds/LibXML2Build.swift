@@ -82,8 +82,8 @@ private final class BuildLibXml2Step: BuildStep {
 
         // Actual list of arguments can be found in `swift-corelibs-foundation/build-android`
         let configureArguments: [String] = [
-            "--with-sysroot=\(config.ndkToolchain)/sysroot",
-            "--with-zlib=\(config.ndkToolchain)/sysroot/usr",
+            "--with-sysroot=\(config.ndk.toolchainPath)/sysroot",
+            "--with-zlib=\(config.ndk.toolchainPath)/sysroot/usr",
             "--prefix=\(installFolderUrl.path)",
             "--without-lzma",
             "--disable-static",

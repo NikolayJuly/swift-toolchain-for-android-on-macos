@@ -33,14 +33,14 @@ struct BuildConfig {
 
     // MARK: NDK
 
+    var ndk: NDK {
+        androidSdk.ndk
+    }
+
     var ndkPath: String { androidSdk.ndk.folderUrl.path() }
 
     var ndkGccVersion: String { NDK.gccVersion }
     var ndkClangVersion: String { NDK.clangVersion }
-
-    var ndkToolchain: String {
-        androidSdk.ndk.toolchain.path()
-    }
 
     // MARK: macOS
 

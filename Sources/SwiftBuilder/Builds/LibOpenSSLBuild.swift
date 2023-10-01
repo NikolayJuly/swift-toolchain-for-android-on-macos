@@ -63,7 +63,7 @@ private final class BuildLibOpenSSLStep: BuildStep {
 
         let exports: [String] = [
             "ANDROID_NDK=\(config.ndkPath)",
-            "PATH=\(config.ndkToolchain)/bin:$PATH"
+            "PATH=\(config.ndk.toolchainPath)/bin:$PATH"
         ]
 
         let configureArguments: [String] = [

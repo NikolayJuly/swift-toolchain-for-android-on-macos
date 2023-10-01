@@ -24,15 +24,15 @@ struct LibFoundationBuild: BuildItemForAndroidArch, NinjaBuildableItem {
     func cmakeCacheEntries(config: BuildConfig) -> [String] {
         let cmakeSwiftFlags = [
             "-resource-dir \(config.buildLocation(for: stdlib).path)/lib/swift",
-            "-Xcc --sysroot=\(config.ndkToolchain)/sysroot",
+            "-Xcc --sysroot=\(config.ndk.toolchainPath)/sysroot",
 
             // I got error, that can't find start stop files - https://stackoverflow.com/questions/69795531/after-ndk22-upgrade-the-build-fails-with-cannot-open-crtbegin-so-o-crtend-so
             // More detailed explanation - https://github.com/NikolayJuly/swift-toolchain-for-android-on-macos/issues/1#issuecomment-1426774354
             "-Xclang-linker -nostartfiles",
 
-            "-Xclang-linker --sysroot=\(config.ndkToolchain)/sysroot/usr/lib/\(arch.ndkLibArchName)/\(config.androidApiLevel)",
-            "-Xclang-linker --gcc-toolchain=\(config.ndkToolchain)",
-            "-tools-directory \(config.ndkToolchain)/bin",
+            "-Xclang-linker --sysroot=\(config.ndk.sysrootLibPath)/\(arch.ndkLibArchName)/\(config.androidApiLevel)",
+            "-Xclang-linker --gcc-toolchain=\(config.ndk.toolchainPath)",
+            "-tools-directory \(config.ndk.toolchainPath)/bin",
 
             //"-Xclang-linker -v",
             //"-v",
