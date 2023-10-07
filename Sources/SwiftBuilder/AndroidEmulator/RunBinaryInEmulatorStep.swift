@@ -1,7 +1,9 @@
 import AndroidConfig
 import Foundation
+import FoundationExtension
 import HostConfig
 import Logging
+import Shell
 
 final class RunBinaryInEmulatorStep: BuildStep {
 
@@ -13,14 +15,25 @@ final class RunBinaryInEmulatorStep: BuildStep {
 
     func execute(_ config: BuildConfig, logger: Logger) async throws {
         let progressReporter = StepProgressReporter(step: "Run in emulator", initialState: .make)
+
+        let compiledTestBinary = try await compileSampleAndroidBinary(config, logger: logger)
+
         let androidEmulator = try await AndroidEmulator(androidSdk: config.androidSdk,
                                                         logger: logger)
         try await androidEmulator.start()
 
         do {
             let adb = try await AndroidADB(androidSdk: config.androidSdk, logger: logger)
+            try await waitTillDeviceAttached(String.emulatorName, adb: adb, logger: logger)
             try await copyAllNeededLibs(config, adb: adb, logger: logger)
 
+            try await adb.copy(compiledTestBinary)
+
+            let testBinaryOutput = try await adb.run(compiledTestBinary.lastPathComponent)
+
+            guard testBinaryOutput == "Hello world" else {
+                throw SimpleError("Unexpected outup of test binary - \(testBinaryOutput). Expects \"Hello world\"")
+            }
         } catch {
             try? await androidEmulator.stop()
             throw error
@@ -46,17 +59,17 @@ final class RunBinaryInEmulatorStep: BuildStep {
         "libswift_Concurrency.so": [nil],
         "libswiftCore.so": [nil],
         "libswiftSwiftOnoneSupport.so": [nil],
-        "libicutuswift.so": [nil, "libicutuswift.so.65"],
-        "libicuucswift.so": [nil, "libicuucswift.so.65"],
-        "libicudataswift.so": [nil, "libicudataswift.so.65"],
-        "libicui18nswift.so": [nil, "libicui18nswift.so.65"],
+        "libicutu.so": [nil, "libicutu.so.65"],
+        "libicuuc.so": [nil, "libicuuc.so.65"],
+        "libicudata.so": [nil, "libicudata.so.65"],
+        "libicui18n.so": [nil, "libicui18n.so.65"],
     ]
 
     private let ndkFiles = ["libc++_shared.so"]
 
-    private func copyAllNeededLibs(_ config: BuildConfig, adb: AndroidADB, logger: Logger) async throws {
+    private let arch = AndroidArchs.arm64
 
-        let arch = AndroidArchs.arm64
+    private func copyAllNeededLibs(_ config: BuildConfig, adb: AndroidADB, logger: Logger) async throws {
 
         for key in toolchainFileMap.keys {
             let toolchainLib = key
@@ -75,6 +88,67 @@ final class RunBinaryInEmulatorStep: BuildStep {
         }
     }
 
-    private func compileSampleAndroidBinary() {
+    private func compileSampleAndroidBinary(_ config: BuildConfig, logger: Logger) async throws -> URL {
+        // this command allow to compile android binary
+
+        let toolchainPath = config.toolchainRootFolder.path()
+        let toolchainBinFolder = "\(toolchainPath)/usr/bin"
+
+        let currentPath = ProcessInfo.processInfo.environment["PATH"] ?? ""
+
+        let environment: [String: String] = [
+            // needed to find "right" swift tools
+            "PATH":"\(toolchainPath)/usr/bin:\(currentPath)",
+
+            // These 2 needed, because swift package from toolchain doesn't work yet
+            "SWIFT_EXEC_MANIFEST": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+            "SWIFT_EXEC": "\(toolchainPath)/usr/bin/swiftc-android",
+        ]
+
+        let swiftBinary = config.toolchainRootFolder.appending(path: "/usr/bin/swift", directoryHint: .notDirectory)
+
+        let testAndroidBinaryName = "swift-on-android-test"
+
+        let buildCommand = ExecuteBinaryCommand(swiftBinary,  "build",
+                                                "--triple", arch.swiftTarget,
+                                                "--product", testAndroidBinaryName,
+                                                "--sdk", toolchainPath,
+                                                "--toolchain", toolchainBinFolder,
+                                                "-Xcc", "-I\(config.ndk.sysrootIncludePath)",
+                                                "-Xcc", "-I\(config.ndk.sysrootIncludePath)/\(arch.ndkLibArchName)",
+                                                currentDirectoryURL: config.sourceRoot,
+                                                environment: environment,
+                                                logger: logger)
+
+        try await buildCommand.execute()
+
+        let showPathCommand = ExecuteBinaryCommand(swiftBinary, "build",
+                                                   "--triple", arch.swiftTarget,
+                                                   "--show-bin-path",
+                                                   currentDirectoryURL: config.sourceRoot,
+                                                   logger: logger)
+        let compiledBinariesPath = try await showPathCommand.execute()
+        let compiledTestBinaryPath = "\(compiledBinariesPath)/\(testAndroidBinaryName)"
+        return URL(filePath: compiledTestBinaryPath, directoryHint: .notDirectory)
+    }
+
+    private func waitTillDeviceAttached(_ device: String,
+                                        timeout: TimeInterval = 20,
+                                        adb: AndroidADB,
+                                        logger: Logger) async throws {
+        logger.info("Searching for attached device named \(device)")
+        let startDate = Date()
+        while Date.now.timeIntervalSince(startDate) < timeout {
+            let devices = try await adb.listConnectedDevices()
+            let neededOne = devices.first(where: { $0.contains(device) })
+            if neededOne != nil {
+                return
+            }
+
+            // no reason to run non stop - lets wait 0.5 sec
+            try await Task.sleep(nanoseconds: 500_000_000)
+        }
+
+        throw SimpleError("Failed to find device \"\(device)\" in given time - \(Int(timeout))s")
     }
 }
