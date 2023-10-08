@@ -34,7 +34,8 @@ public final class ShellCommand {
     @discardableResult
     public func execute() async throws -> String {
         let commandString = command.joined(separator: " ")
-        let command = ExecuteBinaryCommand(URL(fileURLWithPath: "/bin/zsh"),
+        let zShell = URL(filePath: "/bin/zsh", directoryHint: .notDirectory)
+        let command = ExecuteBinaryCommand(zShell,
                                            ["-c", "-l"] + [commandString],
                                            currentDirectoryURL: currentDirectoryURL,
                                            environment: environment,

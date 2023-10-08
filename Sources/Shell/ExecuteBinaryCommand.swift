@@ -28,9 +28,11 @@ public final class ExecuteBinaryCommand {
     }
 
     /// If no output - empty srting will be returned
+    /// - parameter didStartMarker: resume will be called after process did start, so we know that we can call ``terminate``
     @discardableResult
     public func execute() async throws -> String {
         let task = Process()
+        self.task = task
 
         let pipe = Pipe()
         let errorPipe = Pipe()
@@ -50,11 +52,11 @@ public final class ExecuteBinaryCommand {
         task.executableURL = binary
         task.standardInput = nil
 
-        if let currentDirectoryURL = currentDirectoryURL {
+        if let currentDirectoryURL {
             task.currentDirectoryURL = currentDirectoryURL
         }
 
-        if let environment = environment {
+        if let environment {
             task.environment = environment
         }
 
@@ -150,6 +152,10 @@ public final class ExecuteBinaryCommand {
         return output
     }
 
+    public func terminate() {
+        task?.terminate()
+    }
+
     // MARK: Private
 
     private let binary: URL
@@ -163,4 +169,6 @@ public final class ExecuteBinaryCommand {
 
     private var stdOut = [String]()
     private var errorOut = [String]()
+
+    private var task: Process?
 }

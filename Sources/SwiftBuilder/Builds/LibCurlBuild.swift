@@ -85,7 +85,7 @@ private final class BuildLibCurlStep: BuildStep {
         let openSslInstallUrl = config.installLocation(for: openSSL)
 
         let configureArguments: [String] = [
-            "--with-zlib=\(config.ndkToolchain)/sysroot/usr",
+            "--with-zlib=\(config.ndk.toolchainPath)/sysroot/usr",
             "--prefix=\(installFolderUrl.path)",
             "--enable-shared",
             "--disable-static",

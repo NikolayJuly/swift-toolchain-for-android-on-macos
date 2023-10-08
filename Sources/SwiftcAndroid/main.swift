@@ -18,26 +18,29 @@ let currentDirectoryURL = URL(filePath: fileManager.currentDirectoryPath, direct
 
 // Apart from call to compile, we might get couple extra calls
 // Lets move this away from our path
-if CommandLine.argc == 2 {
+let isArbitraryCall = CommandLine.argc == 2
 
-    let flag = CommandLine.arguments[1]
-    switch flag {
-    case "-print-target-info",
-        "--version":
-        let silentLogger = Logger(label: "swiftc-android",
-                                  factory: { SwiftLogNoOpLogHandler($0) })
+// Right now I found one more extra case `-modulewrap`. This is not compile operation.
+// I will do a trick here - if I can't see `.swift` in arguments, mean this is not a compile command, and I will not add anything
+// FIXME: I start thinking that this executable should not exist at all, we should be able to pass all needed parameters with `-Xswiftc`
+let isModuleWrap = CommandLine.arguments.dropFirst().contains("-modulewrap")
 
-        let swiftcCommand = ExecuteBinaryCommand(swiftcUrl,
-                                                 flag,
-                                                 currentDirectoryURL: currentDirectoryURL,
-                                                 logger: silentLogger)
-        let output = try await swiftcCommand.execute()
-        // we need to reprint exact output
-        print(output)
-        exit(0)
-    default:
-        throw SimpleError("Unknown single flag passed to compiler, please update supported list")
-    }
+let shouldEnrichCall = !isModuleWrap && !isArbitraryCall
+
+guard shouldEnrichCall else {
+
+    let passedArguments = CommandLine.arguments.dropFirst()
+    let silentLogger = Logger(label: "swiftc-android",
+                              factory: { SwiftLogNoOpLogHandler($0) })
+
+    let swiftcCommand = ExecuteBinaryCommand(swiftcUrl,
+                                             Array(passedArguments),
+                                             currentDirectoryURL: currentDirectoryURL,
+                                             logger: silentLogger)
+    let output = try await swiftcCommand.execute()
+    // we need to reprint exact output
+    print(output)
+    exit(0)
 }
 
 // We assume that this call is to compile, so we will add extra parameters needed for android
@@ -63,19 +66,27 @@ if existeApiLevelParametr != nil {
     adnroidApiArgument = ["-Xcc", "-D__ANDROID_API__=\(String.androidApiLevel)"]
 }
 
-let ndkToolchainPath = host.ndk.toolchain.path(percentEncoded: false)
+//let ndkToolchainPath = host.ndk.toolchainPath
+
+let sysrootLibs = "\(host.ndk.sysrootLibPath)/\(arguments.target.ndkLibArchName)/\(String.androidApiLevel)"
 
 let extraArguments: [String] = [
-    "-tools-directory", ndkToolchainPath,
-    "-Xclang-linker", "--sysroot=\(ndkToolchainPath)/sysroot/usr/lib/\(arguments.target.ndkLibArchName)/\(String.androidApiLevel)",
-    "-Xclang-linker", "--gcc-toolchain=ndkToolchainPath",
-    "-Xcc", "-I\(ndkToolchainPath)/sysroot/usr/include",
-    "-Xcc", "-I\(ndkToolchainPath)/sysroot/usr/include/\(arguments.target.ndkLibArchName)",
-    "-L", "\(toolchainRootFolderPath)/usr/lib/swift/android/\(arguments.target.swiftArch)"
+    "-tools-directory", "\(host.ndk.toolchainPath)/bin",
+    "-Xclang-linker", "--sysroot=\(sysrootLibs)",
+    "-Xclang-linker", "--gcc-toolchain=\(host.ndk.toolchainPath)",
+
+    // Here is explanation, that we need -B with path passed to linker, so it will search for crtbegin + crtend
+    // https://github.com/android/ndk/issues/1690#issuecomment-1529928723
+    "-Xclang-linker", "-B",
+    "-Xclang-linker", "\(sysrootLibs)",
+
+    "-Xcc", "-I\(host.ndk.toolchain)",
+    "-Xcc", "-I\(host.ndk.sysrootIncludePath)/\(arguments.target.ndkLibArchName)",
+    "-L", "\(toolchainRootFolderPath)/usr/lib/swift/android/\(arguments.target.swiftArch)",
+    "-L", "\(sysrootLibs)",
 ] + adnroidApiArgument
 
 let newArguments = CommandLine.arguments.dropFirst() + extraArguments
 
 let callSwiftC = ExecuteBinaryCommand(swiftcUrl, Array(newArguments), logger: logger)
 try await callSwiftC.execute()
-

@@ -33,14 +33,14 @@ struct BuildConfig {
 
     // MARK: NDK
 
+    var ndk: NDK {
+        androidSdk.ndk
+    }
+
     var ndkPath: String { androidSdk.ndk.folderUrl.path() }
 
     var ndkGccVersion: String { NDK.gccVersion }
     var ndkClangVersion: String { NDK.clangVersion }
-
-    var ndkToolchain: String {
-        androidSdk.ndk.toolchain.path()
-    }
 
     // MARK: macOS
 
@@ -125,18 +125,16 @@ final class SwiftBuildCommand: AsyncParsableCommand {
                 continue
             }
 
-            let stepNumberString = String(format: "%03d", i+1)
-            let logFileName = "Step-\(stepNumberString)-\(step.stepName).log"
-            let logFileURL = buildConfig.logsFolder.appendingPathComponent(logFileName, isDirectory: false)
-            try? fileManager.removeItem(at: logFileURL)
-            let fileLogger = try FileLogging(to: logFileURL)
-            let stepLogger = Logger(label: step.stepName) { label in
-                fileLogger.handler(label: label)
-            }
+            let stepLogger = try createStepLogger(index: i, buildConfig: buildConfig, step: step)
 
             stepLogger.info("Executing step \(type(of: step))")
 
-            try await step.execute(buildConfig, logger: stepLogger)
+            do {
+                try await step.execute(buildConfig, logger: stepLogger)
+            } catch {
+                stepLogger.error("Caught error - \(error)")
+                throw error
+            }
 
             if buildProgress.completedSteps.contains(step.stepName) == false {
                 buildProgress = buildProgress.updated(byAdding: step.stepName)
@@ -158,6 +156,21 @@ final class SwiftBuildCommand: AsyncParsableCommand {
 
         let createToolchainStep = CreateToolchainStep(components: ToolchaninComponents.allComponents)
 
-        return [checkoutStep] + buildSteps + [createToolchainStep]
+        let runInEmulator = RunBinaryInEmulatorStep()
+
+        return [checkoutStep] + buildSteps + [createToolchainStep, runInEmulator]
     }()
+
+    private func createStepLogger(index: Int, buildConfig: BuildConfig, step: BuildStep) throws -> Logger {
+        let stepNumberString = String(format: "%03d", index+1)
+        let logFileName = "Step-\(stepNumberString)-\(step.stepName).log"
+        let logFileURL = buildConfig.logsFolder.appendingPathComponent(logFileName, isDirectory: false)
+        try? fileManager.removeItem(at: logFileURL)
+        let fileLogger = try FileLogging(to: logFileURL)
+        let stepLogger = Logger(label: step.stepName) { label in
+            fileLogger.handler(label: label)
+        }
+
+        return stepLogger
+    }
 }
