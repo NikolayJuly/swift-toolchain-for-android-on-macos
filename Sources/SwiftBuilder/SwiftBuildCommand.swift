@@ -125,14 +125,7 @@ final class SwiftBuildCommand: AsyncParsableCommand {
                 continue
             }
 
-            let stepNumberString = String(format: "%03d", i+1)
-            let logFileName = "Step-\(stepNumberString)-\(step.stepName).log"
-            let logFileURL = buildConfig.logsFolder.appendingPathComponent(logFileName, isDirectory: false)
-            try? fileManager.removeItem(at: logFileURL)
-            let fileLogger = try FileLogging(to: logFileURL)
-            let stepLogger = Logger(label: step.stepName) { label in
-                fileLogger.handler(label: label)
-            }
+            let stepLogger = try createStepLogger(index: i, buildConfig: buildConfig, step: step)
 
             stepLogger.info("Executing step \(type(of: step))")
 
@@ -167,4 +160,17 @@ final class SwiftBuildCommand: AsyncParsableCommand {
 
         return [checkoutStep] + buildSteps + [createToolchainStep, runInEmulator]
     }()
+
+    private func createStepLogger(index: Int, buildConfig: BuildConfig, step: BuildStep) throws -> Logger {
+        let stepNumberString = String(format: "%03d", index+1)
+        let logFileName = "Step-\(stepNumberString)-\(step.stepName).log"
+        let logFileURL = buildConfig.logsFolder.appendingPathComponent(logFileName, isDirectory: false)
+        try? fileManager.removeItem(at: logFileURL)
+        let fileLogger = try FileLogging(to: logFileURL)
+        let stepLogger = Logger(label: step.stepName) { label in
+            fileLogger.handler(label: label)
+        }
+
+        return stepLogger
+    }
 }
