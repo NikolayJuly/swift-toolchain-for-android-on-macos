@@ -30,7 +30,7 @@ public final class ExecuteBinaryCommand {
     /// If no output - empty srting will be returned
     /// - parameter didStartMarker: resume will be called after process did start, so we know that we can call ``terminate``
     @discardableResult
-    public func execute(didStartMarker: CheckedContinuation<Void, Never>? = nil) async throws -> String {
+    public func execute() async throws -> String {
         let task = Process()
         self.task = task
 
@@ -121,7 +121,6 @@ public final class ExecuteBinaryCommand {
             } catch let exc {
                 logger.error("Failed to run task with error - \(exc)")
             }
-            didStartMarker?.resume()
         }
 
         lock.withLock {

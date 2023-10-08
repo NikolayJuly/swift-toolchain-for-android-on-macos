@@ -43,24 +43,26 @@ actor AndroidEmulator {
                                                "-port", .emulatorPrt,
                                                logger: logger)
 
-        await withCheckedContinuation { continuation in
-            Task {
-                do {
-                    try await runEmulator.execute(didStartMarker: continuation)
-                } catch {
-                    switch state {
-                    case let .stopping(continuation):
-                        logger.error("Did stop emulator")
-                        continuation.resume()
-                        break
-                    case .running, .notRunning:
-                        logger.error("Did catch exception during execution - \(error)")
-                    }
-                }
 
-                self.state = .notRunning
+        Task {
+            do {
+                try await runEmulator.execute()
+            } catch {
+                switch state {
+                case let .stopping(continuation):
+                    logger.error("Did stop emulator")
+                    continuation.resume()
+                    break
+                case .running, .notRunning:
+                    logger.error("Did catch exception during execution - \(error)")
+                }
             }
+
+            self.state = .notRunning
         }
+
+        // I know that it takes time to start emulator, so lets just wait for 1 sec
+        try await Task.sleep(for: .seconds(1))
 
         self.state = .running(runEmulator)
     }
