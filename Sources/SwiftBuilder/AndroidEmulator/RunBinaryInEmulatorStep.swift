@@ -55,19 +55,22 @@ final class RunBinaryInEmulatorStep: BuildStep {
     // TODO: Ideally we can actually make these map automatically.
     //       Use `objdump -x  <oaht_to_binary> | grep ‘R.*PATH’` - it will prent all needed files, and we can search thim in toolchain.
     //       And then check dependency of a dependency and repeat copy process.
-    private let toolchainFileMap: [String: [String?]] = [
-        "libFoundation.so": [nil],
-        "libswiftGlibc.so": [nil],
-        "libswiftDispatch.so": [nil],
-        "libdispatch.so": [nil],
-        "libBlocksRuntime.so": [nil],
-        "libswift_Concurrency.so": [nil],
-        "libswiftCore.so": [nil],
-        "libswiftSwiftOnoneSupport.so": [nil],
-        "libicutu.so": [nil, "libicutu.so.65"],
-        "libicuuc.so": [nil, "libicuuc.so.65"],
-        "libicudata.so": [nil, "libicudata.so.65"],
-        "libicui18n.so": [nil, "libicui18n.so.65"],
+
+    /// Files in `symlinkFileMap.keys` will be copied, `symlinkFileMap.values` are way to add optional symlink with other name, because we need .so.65 in some cases
+    private let toolchainLibs: [String] = [
+        "libFoundation.so",
+        "libswiftGlibc.so",
+        "libswiftDispatch.so",
+        "libdispatch.so",
+        "libBlocksRuntime.so",
+        "libswift_Concurrency.so",
+        "libswiftCore.so",
+        "libswiftSwiftOnoneSupport.so",
+        "libicutu.so", "libicutu.so.65", "libicui18n.so.65.1",
+        "libicutu.so", "libicutu.so.65", "libicui18n.so.65.1",
+        "libicuuc.so", "libicuuc.so.65", "libicui18n.so.65.1",
+        "libicudata.so", "libicudata.so.65", "libicui18n.so.65.1",
+        "libicui18n.so", "libicui18n.so.65", "libicui18n.so.65.1",
     ]
 
     private let ndkFiles = ["libc++_shared.so"]
@@ -76,15 +79,11 @@ final class RunBinaryInEmulatorStep: BuildStep {
 
     private func copyAllNeededLibs(_ config: BuildConfig, adb: AndroidADB, logger: Logger) async throws {
 
-        for key in toolchainFileMap.keys {
-            let toolchainLib = key
-            let destinations = toolchainFileMap[key]!
+        for filename in toolchainLibs {
 
-            let sourceUrl = config.toolchainAndroidsLib(for: arch).appending(path: toolchainLib, directoryHint: .notDirectory)
+            let sourceUrl = config.toolchainAndroidsLib(for: arch).appending(path: filename, directoryHint: .notDirectory)
 
-            for destination in destinations {
-                try await adb.copy(sourceUrl, filename: destination)
-            }
+            try await adb.copy(sourceUrl)
         }
 
         for ndkFile in ndkFiles {

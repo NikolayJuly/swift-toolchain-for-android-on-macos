@@ -18,7 +18,7 @@ struct ICUBuild: BuildItemForAndroidArch {
         [
             BuildIcuStep(icu: self),
             MakeStep(buildableItem: self),
-            IcuInstallStep(icu: self)
+            MakeInstallStep(buildableItem: self)
         ]
     }
 
@@ -94,60 +94,6 @@ private final class BuildIcuStep: BuildStep {
                                    logger: logger)
         try await command.execute()
     }
-}
-
-private final class IcuInstallStep: BuildStep {
-
-    init(icu: BuildItemForAndroidArch) {
-        self.icu = icu
-    }
-
-    var stepName: String { "install-\(icu.name)" }
-
-    func execute(_ config: BuildConfig, logger: Logging.Logger) async throws {
-
-        let progressReporter = StepProgressReporter(step: "Install ICU \(icu.arch.name)", initialState: .install)
-
-        let defaultInstall = MakeInstallStep(buildableItem: icu)
-        try await defaultInstall.execute(config, logger: logger)
-
-        let installFolder = config.installLocation(for: icu)
-        let installLibsFolder = installFolder.appendingPathComponent("lib", isDirectory: true)
-
-        let libsFiles = try fileManager.categorizedFolderContent(at: installLibsFolder).files
-
-        // Remove .so files, as they are symlinks
-        // For now for each lib we have 3 files. For example, `libicudataswift.so`, `libicudataswift.so.65` and `libicudataswift.so.65.1`
-        // We wanna remove .so and .so.65, and rename .so.65.1 to .so
-
-        let toBeRenamedLibs = libsFiles.filter { $0.lastPathComponent.hasSuffix(".so.65.1") }
-        guard toBeRenamedLibs.count == 5 else {
-            throw SimpleError("Install step for \(icu.name) has unexpected number of libs \(toBeRenamedLibs.count).")
-        }
-
-        let toBeRemovedLibs = libsFiles.filter { toBeRenamedLibs.contains($0) == false }
-
-        for toBeRemovedLib in toBeRemovedLibs {
-            try fileManager.removeItem(at: toBeRemovedLib)
-        }
-
-        for lib in toBeRenamedLibs {
-            // Shoortcut, assuming there is no `.` in libname itself
-            let libName = lib.lastPathComponent.components(separatedBy: ".").first!
-
-            let libFilename = libName + ".so"
-            let destination = installLibsFolder.appending(path: libFilename, directoryHint: .notDirectory)
-            try fileManager.moveItem(at: lib, to: destination)
-        }
-
-        progressReporter.update(state: .done)
-    }
-
-
-    // MARK: Private
-
-    private let icu: BuildItemForAndroidArch
-    private var fileManager: FileManager { FileManager.default }
 }
 
 private extension AndroidArch {
