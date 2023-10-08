@@ -20,7 +20,7 @@ Here are steps to compile package
  swift build --triple aarch64-unknown-linux-android \
     --emit-swift-module-separately \
     --sdk <toolchain_path> \
-    --toolchain <toolchain_path>/bin \
+    --toolchain <toolchain_path>/usr/bin \
     -Xswiftc -emit-library \
     -Xswiftc -emit-module \
     -Xcc -I/Users/$USER/Library/Android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include \
