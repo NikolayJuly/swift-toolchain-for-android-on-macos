@@ -25,6 +25,9 @@ final class RunBinaryInEmulatorStep: BuildStep {
         do {
             let adb = try await AndroidADB(androidSdk: config.androidSdk, logger: logger)
             try await waitTillDeviceAttached(String.emulatorName, adb: adb, logger: logger)
+
+            try await adb.deleteBinPath()
+
             try await copyAllNeededLibs(config, adb: adb, logger: logger)
 
             try await adb.copy(compiledTestBinary)
@@ -34,6 +37,8 @@ final class RunBinaryInEmulatorStep: BuildStep {
             guard testBinaryOutput == "Hello world" else {
                 throw SimpleError("Unexpected outup of test binary - \(testBinaryOutput). Expects \"Hello world\"")
             }
+
+            logger.info("We did run test in emulator and got expected \"Hello world\"")
         } catch {
             try? await androidEmulator.stop()
             throw error

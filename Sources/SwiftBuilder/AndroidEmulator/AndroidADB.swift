@@ -26,7 +26,7 @@ final class AndroidADB {
         let coomand = ExecuteBinaryCommand(adbBinaryUrl,
                                            "-s", String.emulatorName,
                                            "shell",
-                                           "rm", "-f", emulatorBinPath,
+                                           "rm", "-fr", emulatorBinPath,
                                            logger: logger)
         try await coomand.execute()
     }
