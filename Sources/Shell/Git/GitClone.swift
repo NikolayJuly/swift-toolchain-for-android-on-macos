@@ -13,7 +13,7 @@ public actor GitClone {
     }
 
     public func execute() async throws {
-        let command = ShellCommand("git", "clone", "--progress", source.absoluteString, destination.path, logger: logger)
+        let command = ShellCommand("git", "clone", "--progress", source.absoluteString, "\"\(destination.path)\"", logger: logger)
         _ = try await command.execute()
     }
 
