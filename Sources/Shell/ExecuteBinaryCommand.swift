@@ -28,7 +28,6 @@ public final class ExecuteBinaryCommand {
     }
 
     /// If no output - empty srting will be returned
-    /// - parameter didStartMarker: resume will be called after process did start, so we know that we can call ``terminate``
     @discardableResult
     public func execute() async throws -> String {
         let task = Process()
